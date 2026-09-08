@@ -1,23 +1,24 @@
 @import "tailwindcss";
 
 @theme {
-  --color-cream: #faf6ee;
+  /* Brand palette: charcoal + crimson (token names predate the palette). */
+  --color-cream: #faf7f2;
   --color-parchment: #f1e8d7;
   --color-espresso: #221a12;
   --color-bark: #4a3d2e;
 
-  --color-pine-950: #0c231c;
-  --color-pine-900: #12332a;
-  --color-pine-800: #174434;
-  --color-pine-700: #1f5943;
-  --color-pine-100: #dcebe1;
-  --color-pine-50: #eef5ef;
+  --color-pine-950: #101013;
+  --color-pine-900: #191920;
+  --color-pine-800: #232329;
+  --color-pine-700: #2f2f38;
+  --color-pine-100: #e3e3e8;
+  --color-pine-50: #f2f2f4;
 
-  --color-copper-700: #8f4a20;
-  --color-copper-600: #a8582a;
-  --color-copper-500: #c2703d;
-  --color-copper-200: #eccfae;
-  --color-copper-100: #f7e6d2;
+  --color-copper-700: #8f1d2c;
+  --color-copper-600: #c22434;
+  --color-copper-500: #e54857;
+  --color-copper-200: #f3b3bb;
+  --color-copper-100: #fbe7e9;
 
   --font-display: Georgia, "Times New Roman", serif;
 }
