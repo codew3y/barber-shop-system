@@ -30,11 +30,9 @@ function Nav() {
   }, [hydrate]);
 
   // Scroll-spy: highlight follows the section in view (works for clicks and scrolling).
+  // Derived per-pathname so no state sync is needed when leaving home.
   useEffect(() => {
-    if (pathname !== '/') {
-      setActiveSection('');
-      return;
-    }
+    if (pathname !== '/') return;
     const ids = ['services', 'barbers'];
     const observer = new IntersectionObserver(
       (entries) => {
@@ -51,6 +49,8 @@ function Nav() {
     return () => observer.disconnect();
   }, [pathname]);
 
+  const linkActive = (id: string) => pathname === '/' && activeSection === id;
+
   const linkClass = (active: boolean) =>
     `hidden font-semibold hover:underline sm:inline ${active ? 'text-copper-500' : ''}`;
 
@@ -59,10 +59,10 @@ function Nav() {
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
         <BrandMark />
         <nav className="flex items-center gap-3 text-sm sm:gap-5">
-          <Link href="/#services" className={linkClass(activeSection === 'services')}>
+          <Link href="/#services" className={linkClass(linkActive('services'))}>
             Services
           </Link>
-          <Link href="/#barbers" className={linkClass(activeSection === 'barbers')}>
+          <Link href="/#barbers" className={linkClass(linkActive('barbers'))}>
             Barbers
           </Link>
           {ready && user ? (
@@ -70,6 +70,16 @@ function Nav() {
               <Link href="/dashboard" className="hover:underline">
                 My bookings
               </Link>
+              {(user.role === 'staff' || user.role === 'admin' || user.role === 'super_admin') && (
+                <Link href="/staff" className="hover:underline">
+                  Staff
+                </Link>
+              )}
+              {(user.role === 'admin' || user.role === 'super_admin') && (
+                <Link href="/admin" className="hover:underline">
+                  Admin
+                </Link>
+              )}
               <span className="hidden text-cream/60 sm:inline">
                 {user.firstName} · {user.role}
               </span>
