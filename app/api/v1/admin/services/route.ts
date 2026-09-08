@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireRole, jsonError } from '@/lib/api';
 import { isShopAdmin } from '@/lib/staff-scope';
+import { cleanOptional, cleanText } from '@/lib/sanitize';
 import { upsertServiceSchema } from '@/schemas/staff';
 
 export async function GET(req: NextRequest) {
@@ -37,6 +38,14 @@ export async function POST(req: NextRequest) {
   }
 
   const { shopId: _omit, ...data } = parsed.data;
-  const service = await prisma.service.create({ data: { ...data, shopId } });
+  const service = await prisma.service.create({
+    data: {
+      ...data,
+      shopId,
+      name: cleanText(data.name, 255),
+      description: cleanOptional(data.description, 2000) ?? null,
+      category: data.category ? cleanText(data.category, 100) : data.category,
+    },
+  });
   return NextResponse.json({ service }, { status: 201 });
 }

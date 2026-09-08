@@ -3,12 +3,17 @@ import { prisma } from '@/lib/prisma';
 import { requireAuth, jsonError } from '@/lib/api';
 import { canActOnBooking } from '@/services/bookingService';
 import { queueBookingNotifications } from '@/services/notificationService';
+import { cleanOptional } from '@/lib/sanitize';
+import { rateLimit } from '@/lib/rate-limit';
 import { cancelBookingSchema } from '@/schemas/booking';
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ bookingId: string }> }) {
   const auth = await requireAuth(req);
   if ('error' in auth) return auth.error;
   const { bookingId } = await params;
+
+  const limited = rateLimit(req, 'booking-mutate', 20, 60_000);
+  if (limited) return limited;
 
   let body: unknown = {};
   try {
@@ -35,7 +40,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ book
     where: { id: bookingId },
     data: {
       status: 'cancelled',
-      cancellationReason: parsed.data.reason,
+      cancellationReason: cleanOptional(parsed.data.reason, 500),
       cancelledBy: auth.user.id,
       cancelledAt: new Date(),
       holdExpiresAt: null,

@@ -5,6 +5,7 @@ import { rateLimit } from '@/lib/rate-limit';
 import { getIdempotentResponse, setIdempotentResponse } from '@/lib/idempotency';
 import { HOLD_MINUTES, validateSlotAvailability } from '@/services/bookingService';
 import { queueBookingNotifications } from '@/services/notificationService';
+import { cleanOptional } from '@/lib/sanitize';
 import { createBookingSchema } from '@/schemas/booking';
 
 export async function POST(req: NextRequest) {
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
         endAt: check.endTime,
         status: 'pending',
         holdExpiresAt: new Date(Date.now() + HOLD_MINUTES * 60_000),
-        notes,
+        notes: cleanOptional(notes, 500),
       },
       include: { service: true, staff: { include: { user: { select: { firstName: true, lastName: true } } } }, shop: true },
     });
