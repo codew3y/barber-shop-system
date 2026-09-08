@@ -13,7 +13,7 @@ function BrandMark() {
       <span className="font-display flex h-9 w-9 items-center justify-center rounded-full bg-pine-900 text-lg text-copper-200">
         ✂
       </span>
-      <span className="font-display text-lg tracking-wide">BarberHouse</span>
+      <span className="font-display text-lg uppercase tracking-wide">BarberHouse</span>
     </Link>
   );
 }
@@ -85,7 +85,7 @@ function Footer() {
     <footer className="mt-12 border-t border-cream/10 bg-black/30 text-cream/80">
       <div className="mx-auto grid max-w-5xl gap-8 px-4 py-10 text-sm sm:grid-cols-3">
         <div>
-          <p className="font-display text-lg text-cream">BarberHouse</p>
+          <p className="font-display text-lg uppercase text-cream">BarberHouse</p>
           <p className="mt-2 max-w-xs">
             A booking house for classic cuts, sharp fades, and unhurried straight-razor shaves.
           </p>
