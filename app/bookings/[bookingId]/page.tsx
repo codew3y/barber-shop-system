@@ -17,13 +17,13 @@ export default function BookingConfirmationPage({
     queryFn: () => apiJson<{ booking: Booking }>(`/api/v1/bookings/${bookingId}`),
   });
 
-  if (isLoading) return <p className="text-bark">Fetching your ticket…</p>;
-  if (error) return <p className="text-red-700">{(error as Error).message}</p>;
+  if (isLoading) return <p className="text-cream/60">Fetching your ticket…</p>;
+  if (error) return <p className="text-red-300">{(error as Error).message}</p>;
   const booking = data!.booking;
 
   return (
     <div>
-      <section className="rounded-3xl bg-pine-950 px-6 py-10 text-center text-cream">
+      <section className="band px-6 py-10 text-center">
         <p className="text-xs font-semibold tracking-widest text-copper-200">THE TICKET</p>
         <h1 className="font-display mt-1 text-4xl">
           {booking.status === 'cancelled' ? 'Chair released' : 'Chair reserved 🎉'}
@@ -35,15 +35,15 @@ export default function BookingConfirmationPage({
 
       <div className="card mt-6">
         <dl className="grid gap-1 text-sm">
-          <div className="flex justify-between"><dt className="text-bark">Shop</dt><dd className="font-medium">{booking.shop?.name}</dd></div>
-          <div className="flex justify-between"><dt className="text-bark">Service</dt><dd className="font-medium">{booking.service?.name}</dd></div>
+          <div className="flex justify-between"><dt className="text-cream/60">Shop</dt><dd className="font-medium">{booking.shop?.name}</dd></div>
+          <div className="flex justify-between"><dt className="text-cream/60">Service</dt><dd className="font-medium">{booking.service?.name}</dd></div>
           <div className="flex justify-between">
-            <dt className="text-bark">Barber</dt>
+            <dt className="text-cream/60">Barber</dt>
             <dd className="font-medium">{booking.staff?.user.firstName} {booking.staff?.user.lastName}</dd>
           </div>
-          <div className="flex justify-between"><dt className="text-bark">Status</dt><dd className="font-medium">{booking.status}</dd></div>
+          <div className="flex justify-between"><dt className="text-cream/60">Status</dt><dd className="font-medium">{booking.status}</dd></div>
           {booking.holdExpiresAt && booking.status === 'pending' && (
-            <div className="flex justify-between"><dt className="text-bark">Hold expires</dt><dd>{new Date(booking.holdExpiresAt).toLocaleString()}</dd></div>
+            <div className="flex justify-between"><dt className="text-cream/60">Hold expires</dt><dd>{new Date(booking.holdExpiresAt).toLocaleString()}</dd></div>
           )}
         </dl>
       </div>
@@ -52,14 +52,14 @@ export default function BookingConfirmationPage({
       {booking.notifications?.length ? (
         <ul className="mb-6 grid gap-2">
           {booking.notifications.map((n) => (
-            <li key={n.id} className="flex justify-between rounded-xl border border-espresso/10 bg-white/70 px-3 py-2 text-sm">
+            <li key={n.id} className="flex justify-between rounded-xl border border-cream/10 bg-pine-900 px-3 py-2 text-sm">
               <span>{n.channel} · {n.type}</span>
-              <span className="text-bark">{n.status}</span>
+              <span className="text-cream/60">{n.status}</span>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="mb-6 text-sm text-bark">No messages from the house yet.</p>
+        <p className="mb-6 text-sm text-cream/60">No messages from the house yet.</p>
       )}
 
       <div className="flex gap-3">

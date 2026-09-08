@@ -28,7 +28,7 @@ export default function RegisterPage() {
     <div className="mx-auto max-w-sm">
       <div className="card">
         <h1 className="font-display mb-1 text-2xl">Join the house</h1>
-        <p className="mb-4 text-sm text-bark">One account, every chair in the catalog.</p>
+        <p className="mb-4 text-sm text-cream/60">One account, every chair in the catalog.</p>
         <form
           onSubmit={handleSubmit(async (values) => {
             setError(null);
@@ -51,7 +51,7 @@ export default function RegisterPage() {
           </div>
           <input {...register('email')} type="email" placeholder="Email" className="field" />
           <input {...register('password')} type="password" placeholder="Password (8+ chars)" className="field" />
-          {error && <p className="text-sm text-red-700">{error}</p>}
+          {error && <p className="text-sm text-red-300">{error}</p>}
           <button className="btn-primary">Open my account</button>
         </form>
       </div>

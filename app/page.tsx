@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ShopBrowser } from '@/components/public/ShopBrowser';
+import { prisma } from '@/lib/prisma';
 
 const features = [
   {
@@ -19,13 +19,36 @@ const features = [
   },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const shop = await prisma.shop.findFirst({
+    where: { isActive: true, deletedAt: null },
+    orderBy: { createdAt: 'asc' },
+    include: {
+      services: { where: { isActive: true, deletedAt: null }, orderBy: { price: 'asc' } },
+      staff: {
+        where: { isActive: true, deletedAt: null },
+        include: { user: { select: { firstName: true, lastName: true } } },
+      },
+    },
+  });
+
+  if (!shop) {
+    return (
+      <div className="card">
+        <h1 className="font-display text-2xl">The house isn&apos;t open yet</h1>
+        <p className="mt-1 text-sm text-cream/60">
+          No shop on the books. Run <code>npm run db:seed</code> to open BarberHouse locally.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div>
       {/* Hero */}
-      <section className="overflow-hidden rounded-3xl bg-pine-950 px-6 py-14 text-center text-cream sm:px-12 sm:py-20">
+      <section className="band overflow-hidden px-6 py-14 text-center sm:px-12 sm:py-20">
         <p className="mx-auto mb-5 inline-flex items-center gap-2 rounded-full border border-copper-500/40 bg-copper-600/10 px-4 py-1 text-xs font-semibold tracking-widest text-copper-200">
-          ★ THE NEIGHBORHOOD BOOKING HOUSE
+          ★ {shop.city.toUpperCase()} · EST. FOR SHARP LOOKS
         </p>
         <h1 className="font-display mx-auto max-w-3xl text-4xl leading-tight sm:text-6xl">
           Sharp Looks.
@@ -33,21 +56,20 @@ export default function Home() {
           <span className="text-copper-500">Zero Waiting Room.</span>
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-cream/70">
-          Browse local shops, choose your barber and chair time, and walk in like a regular —
-          no account needed to look around.
+          {shop.description ?? 'Choose your barber and chair time, and walk in like a regular.'}
         </p>
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
-            href="#catalog"
+            href={`/booking/${shop.id}`}
             className="rounded-full bg-copper-600 px-7 py-3 font-medium text-cream hover:bg-copper-700"
           >
-            Find your chair
+            Book your chair
           </Link>
           <Link
-            href="/register"
+            href="#services"
             className="rounded-full border border-cream/25 px-7 py-3 hover:bg-cream/10"
           >
-            Create account
+            View the menu
           </Link>
         </div>
       </section>
@@ -55,21 +77,69 @@ export default function Home() {
       {/* Features */}
       <section className="mt-6 grid gap-4 sm:grid-cols-3">
         {features.map((f) => (
-          <div key={f.title} className="rounded-2xl border border-espresso/10 bg-white/60 p-5">
-            <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-copper-100 text-lg text-copper-700">
+          <div key={f.title} className="rounded-2xl border border-cream/10 bg-pine-900 p-5">
+            <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-copper-600/15 text-lg text-copper-200">
               {f.icon}
             </span>
             <h2 className="font-display text-lg">{f.title}</h2>
-            <p className="mt-1 text-sm text-bark">{f.text}</p>
+            <p className="mt-1 text-sm text-cream/60">{f.text}</p>
           </div>
         ))}
       </section>
 
-      {/* Catalog */}
-      <section id="catalog" className="mt-12 scroll-mt-20">
-        <p className="text-xs font-semibold tracking-widest text-copper-700">SHOP CATALOG</p>
-        <h2 className="font-display mb-5 text-3xl">Chairs near you</h2>
-        <ShopBrowser />
+      {/* Services */}
+      <section id="services" className="mt-12 scroll-mt-20">
+        <p className="text-xs font-semibold tracking-widest text-copper-200">THE MENU</p>
+        <h2 className="font-display mb-5 text-3xl">Cuts & services</h2>
+        <ul className="grid gap-2 sm:grid-cols-2">
+          {shop.services.map((s) => (
+            <li key={s.id} className="rounded-xl border border-cream/10 bg-pine-900 px-4 py-3">
+              <div className="flex justify-between font-medium">
+                <span>{s.name}</span>
+                <span className="text-copper-200">${Number(s.price).toFixed(2)}</span>
+              </div>
+              <p className="text-sm text-cream/60">
+                {s.durationMinutes} min{s.category ? ` · ${s.category}` : ''}
+              </p>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* Barbers */}
+      <section id="barbers" className="mt-12 scroll-mt-20">
+        <p className="text-xs font-semibold tracking-widest text-copper-200">THE CHAIRS</p>
+        <h2 className="font-display mb-5 text-3xl">Meet the barbers</h2>
+        <ul className="grid gap-3 sm:grid-cols-3">
+          {shop.staff.map((s) => (
+            <li key={s.id} className="rounded-2xl border border-cream/10 bg-pine-900 p-5 text-center">
+              <span className="font-display mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-copper-600/15 text-2xl text-copper-200">
+                {s.user.firstName.charAt(0)}
+              </span>
+              <p className="font-medium">
+                {s.user.firstName} {s.user.lastName}
+              </p>
+              {s.bio && <p className="mt-1 text-sm text-cream/60">{s.bio}</p>}
+            </li>
+          ))}
+        </ul>
+        <Link
+          href={`/booking/${shop.id}`}
+          className="mt-6 inline-block rounded-full bg-copper-600 px-7 py-3 font-medium text-cream hover:bg-copper-700"
+        >
+          Book with the house
+        </Link>
+      </section>
+
+      {/* Visit */}
+      <section id="visit" className="mt-12 scroll-mt-20 rounded-3xl border border-cream/10 bg-black/30 px-6 py-8 sm:px-10">
+        <p className="text-xs font-semibold tracking-widest text-copper-200">VISIT</p>
+        <h2 className="font-display mb-3 text-3xl">Find the house</h2>
+        <p className="text-cream/70">
+          {shop.addressLine1}, {shop.city}, {shop.state} {shop.postalCode}
+        </p>
+        <p className="mt-1 text-cream/70">{shop.phone}</p>
+        <p className="mt-1 text-sm text-cream/60">Mon – Sat · 9:00 – 18:00 · Walk-ins welcome where the queue allows.</p>
       </section>
     </div>
   );

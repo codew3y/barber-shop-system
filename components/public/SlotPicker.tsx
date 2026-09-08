@@ -55,10 +55,10 @@ export function SlotPicker({
               onClick={() => onSelect(slot)}
               className={`rounded-lg border px-2 py-1.5 text-sm font-medium ${
                 selected?.startTime === slot.startTime
-                  ? 'border-pine-800 bg-pine-900 text-cream'
+                  ? 'border-copper-500 bg-copper-600 text-cream'
                   : slot.available
-                    ? 'border-espresso/20 bg-white/70 hover:border-copper-500'
-                    : 'cursor-not-allowed border-espresso/10 text-bark/40'
+                    ? 'border-cream/15 bg-pine-900 hover:border-copper-500'
+                    : 'cursor-not-allowed border-cream/10 text-cream/40'
               }`}
             >
               {new Date(slot.startTime).toLocaleTimeString([], {

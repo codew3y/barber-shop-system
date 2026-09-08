@@ -26,7 +26,7 @@ export default function LoginPage() {
     <div className="mx-auto max-w-sm">
       <div className="card">
         <h1 className="font-display mb-1 text-2xl">Welcome back</h1>
-        <p className="mb-4 text-sm text-bark">Your chairs are waiting.</p>
+        <p className="mb-4 text-sm text-cream/60">Your chairs are waiting.</p>
         <form
           onSubmit={handleSubmit(async (values) => {
             setError(null);
@@ -45,7 +45,7 @@ export default function LoginPage() {
         >
           <input {...register('email')} type="email" placeholder="Email" className="field" />
           <input {...register('password')} type="password" placeholder="Password" className="field" />
-          {error && <p className="text-sm text-red-700">{error}</p>}
+          {error && <p className="text-sm text-red-300">{error}</p>}
           <button className="btn-primary">Sign in</button>
         </form>
       </div>
