@@ -147,6 +147,7 @@ function Footer() {
             <p>Loading address…</p>
           )}
           <p className="mt-1">Mon – Sat · 9:00 – 18:00</p>
+          <p>Sun · 10:00 – 16:00</p>
         </div>
         <div>
           <p className="mb-2 font-semibold tracking-widest text-copper-200">EXPLORE</p>
