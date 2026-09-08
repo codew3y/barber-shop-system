@@ -69,6 +69,7 @@
 | 2026-09-08 | Completed Phase 5 (M4): Stripe intents (deposit/full, 20% default) + signature-verified webhooks + admin refunds; 24h/1h reminders with dedupe + shop opt-out; jobs runner (holds, reminders, no-show + fee, `npm run jobs` + keyed HTTP trigger); ICS download + confirmation link. Live-verified with timed fixtures; 15/15 tests, build + e2e green. Needs Stripe/SMTP keys for live money + delivery. |
 | 2026-09-08 | Booking flow redesign: combined Barber & Service step (preselect only via ?staff=), icon step indicators, Continue buttons per step, date-first time picker, service price ranges (₱300–₱350), per-barber price in review, staff filtered by service. E2E green, screenshot-verified. |
 | 2026-09-08 | Flow compaction: single Barber|Service panel (cross-outs both directions), side-by-side date|time panel with unavailable labels, tighter spacing — fits above the fold. E2E green, screenshot-verified. |
+| 2026-09-08 | Fixed 12am-slot bug: slot engine now works in shop timezone (Intl-based, no deps); house moved to Asia/Manila + Quezon City address; SlotPicker formats in shop tz; API returns tz. 19/19 tests, e2e green. |
 
 ## Quickstart (fresh machine / resume)
 
