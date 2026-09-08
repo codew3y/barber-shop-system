@@ -1,0 +1,78 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { requireAuth, jsonError } from '@/lib/api';
+import { rateLimit } from '@/lib/rate-limit';
+import { createIntent, stripeConfigured } from '@/lib/stripe';
+import { createIntentSchema } from '@/schemas/payment';
+
+async function effectivePrice(booking: { staffId: string; serviceId: string; service: { price: unknown } }): Promise<number> {
+  const override = await prisma.staffService.findUnique({
+    where: { staffId_serviceId: { staffId: booking.staffId, serviceId: booking.serviceId } },
+  });
+  return Number(override?.customPrice ?? booking.service.price);
+}
+
+export async function POST(req: NextRequest) {
+  const auth = await requireAuth(req);
+  if ('error' in auth) return auth.error;
+
+  const limited = rateLimit(req, 'payment-intent', 10, 60_000);
+  if (limited) return limited;
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return jsonError('Invalid JSON body', 400);
+  }
+  const parsed = createIntentSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Validation failed', details: parsed.error.flatten() }, { status: 400 });
+  }
+
+  const booking = await prisma.booking.findUnique({
+    where: { id: parsed.data.bookingId },
+    include: { service: { select: { price: true, name: true } }, shop: { select: { settingsJson: true } } },
+  });
+  if (!booking) return jsonError('Booking not found', 404);
+  if (booking.customerId !== auth.user.id) return jsonError('Insufficient permissions', 403);
+  if (booking.status === 'cancelled' || booking.status === 'completed' || booking.status === 'no_show') {
+    return jsonError(`Cannot pay for a ${booking.status} booking`, 400);
+  }
+
+  const price = await effectivePrice(booking);
+  const settings = (booking.shop.settingsJson as Record<string, unknown>) ?? {};
+  const depositPercent = Number(settings.depositPercent ?? 20);
+  const amount =
+    parsed.data.type === 'deposit' ? Math.round(price * (depositPercent / 100) * 100) / 100 : price;
+
+  if (!stripeConfigured()) {
+    return NextResponse.json(
+      { error: 'Payments not configured yet — pay at the shop', configured: false },
+      { status: 503 }
+    );
+  }
+
+  const intent = await createIntent({
+    amountPesos: amount,
+    currency: 'php',
+    metadata: { bookingId: booking.id, type: parsed.data.type, customerId: auth.user.id },
+  });
+  if (!intent) return jsonError('Payment provider error', 502);
+
+  const payment = await prisma.payment.create({
+    data: {
+      bookingId: booking.id,
+      amount,
+      currency: 'PHP',
+      status: 'processing',
+      type: parsed.data.type,
+      provider: 'stripe',
+      providerRef: intent.intentId,
+    },
+  });
+  return NextResponse.json(
+    { clientSecret: intent.clientSecret, paymentId: payment.id, amount: amount.toFixed(2) },
+    { status: 201 }
+  );
+}
