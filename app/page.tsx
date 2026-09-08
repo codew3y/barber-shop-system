@@ -47,7 +47,7 @@ export default async function Home() {
     <div>
       {/* Hero */}
       <section className="band overflow-hidden px-6 py-14 text-center sm:px-12 sm:py-20">
-        <p className="mx-auto mb-5 inline-flex items-center gap-2 rounded-none border border-copper-500/40 bg-copper-600/10 px-4 py-1 text-xs font-semibold tracking-widest text-copper-200">
+        <p className="mx-auto mb-5 inline-flex items-center gap-2 rounded border border-copper-500/40 bg-copper-600/10 px-4 py-1 text-xs font-semibold tracking-widest text-copper-200">
           ★ {shop.city.toUpperCase()} · EST. FOR SHARP LOOKS
         </p>
         <h1 className="font-display mx-auto max-w-3xl text-4xl leading-tight sm:text-6xl">
@@ -61,13 +61,13 @@ export default async function Home() {
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
             href={`/booking/${shop.id}`}
-            className="rounded-none bg-copper-600 px-7 py-3 font-medium text-cream hover:bg-copper-700"
+            className="rounded bg-copper-600 px-7 py-3 font-medium text-cream hover:bg-copper-700"
           >
             Book your chair
           </Link>
           <Link
             href="#services"
-            className="rounded-none border border-cream/25 px-7 py-3 hover:bg-cream/10"
+            className="rounded border border-cream/25 px-7 py-3 hover:bg-cream/10"
           >
             View the menu
           </Link>
@@ -125,7 +125,7 @@ export default async function Home() {
         </ul>
         <Link
           href={`/booking/${shop.id}`}
-          className="mt-6 inline-block rounded-none bg-copper-600 px-7 py-3 font-medium text-cream hover:bg-copper-700"
+          className="mt-6 inline-block rounded bg-copper-600 px-7 py-3 font-medium text-cream hover:bg-copper-700"
         >
           Book with the house
         </Link>

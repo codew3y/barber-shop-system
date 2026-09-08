@@ -53,7 +53,7 @@ export function SlotPicker({
               key={slot.startTime}
               disabled={!slot.available}
               onClick={() => onSelect(slot)}
-              className={`rounded-none border px-2 py-1.5 text-sm font-medium ${
+              className={`rounded border px-2 py-1.5 text-sm font-medium ${
                 selected?.startTime === slot.startTime
                   ? 'border-copper-500 bg-copper-600 text-cream'
                   : slot.available

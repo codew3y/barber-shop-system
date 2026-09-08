@@ -50,7 +50,7 @@ function Nav() {
                   clear();
                   window.location.href = '/';
                 }}
-                className="rounded-none border border-cream/25 px-3 py-1.5 hover:bg-cream/10"
+                className="rounded border border-cream/25 px-3 py-1.5 hover:bg-cream/10"
               >
                 Logout
               </button>
@@ -59,13 +59,13 @@ function Nav() {
             <>
               <Link
                 href="/login"
-                className="rounded-none border border-cream/25 px-3 py-1.5 hover:bg-cream/10"
+                className="rounded border border-cream/25 px-3 py-1.5 hover:bg-cream/10"
               >
                 Sign in
               </Link>
               <Link
                 href="/register"
-                className="rounded-none bg-copper-600 px-4 py-1.5 font-medium text-cream hover:bg-copper-700"
+                className="rounded bg-copper-600 px-4 py-1.5 font-medium text-cream hover:bg-copper-700"
               >
                 Book now
               </Link>
