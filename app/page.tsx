@@ -50,7 +50,7 @@ export default async function Home() {
         <p className="mx-auto mb-5 inline-flex items-center gap-2 rounded border border-copper-500/40 bg-copper-600/10 px-4 py-1 text-xs font-semibold tracking-widest text-copper-200">
           ★ {shop.city.toUpperCase()} · EST. FOR SHARP LOOKS
         </p>
-        <h1 className="font-display mx-auto max-w-3xl text-4xl leading-tight sm:text-6xl">
+        <h1 className="font-display mx-auto max-w-3xl text-4xl uppercase leading-tight sm:text-6xl">
           Sharp Looks.
           <br />
           <span className="text-copper-500">Zero Waiting Room.</span>
