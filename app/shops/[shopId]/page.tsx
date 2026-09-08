@@ -27,7 +27,7 @@ export default async function ShopPage({ params }: { params: Promise<{ shopId: s
         {shop.description && <p className="mt-3 max-w-xl text-cream/80">{shop.description}</p>}
         <Link
           href={`/booking/${shop.id}`}
-          className="mt-6 inline-block rounded-full bg-copper-600 px-6 py-2.5 font-medium text-cream hover:bg-copper-700"
+          className="mt-6 inline-block rounded bg-copper-600 px-6 py-2.5 font-medium text-cream hover:bg-copper-700"
         >
           Book a chair
         </Link>
