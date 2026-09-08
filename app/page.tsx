@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
+import { peso } from '@/lib/format';
 
 const features = [
   {
@@ -96,7 +97,7 @@ export default async function Home() {
             <li key={s.id} className="rounded-xl border border-cream/10 bg-pine-900 px-4 py-3">
               <div className="flex justify-between font-medium">
                 <span>{s.name}</span>
-                <span className="text-copper-200">${Number(s.price).toFixed(2)}</span>
+                  <span className="text-copper-200">{peso(s.price)}</span>
               </div>
               <p className="text-sm text-cream/60">
                 {s.durationMinutes} min{s.category ? ` · ${s.category}` : ''}

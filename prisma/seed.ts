@@ -91,7 +91,7 @@ async function main() {
       name: 'Classic Cut',
       description: 'Consultation, cut, hot-lather neckline, and style.',
       durationMinutes: 30,
-      price: 25.0,
+      price: 350.0,
       bufferMinutes: 5,
       category: 'Haircut',
     },
