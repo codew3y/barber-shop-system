@@ -148,11 +148,11 @@ export function SlotPicker({
                     key={slot.startTime}
                     disabled={!slot.available}
                     onClick={() => onSelect(slot)}
-                    className={`rounded border px-1 py-1.5 text-sm font-medium ${
+                    className={`rounded border px-1 py-1.5 text-sm font-medium transition-all duration-150 ${
                       selected?.startTime === slot.startTime
-                        ? 'border-copper-500 bg-copper-600 text-cream'
+                        ? 'border-copper-500 bg-copper-600 text-cream shadow-lg shadow-copper-600/30'
                         : slot.available
-                          ? 'border-cream/15 bg-pine-950 hover:border-copper-500'
+                          ? 'border-cream/15 bg-pine-950 hover:-translate-y-0.5 hover:border-copper-500 hover:shadow-md hover:shadow-copper-600/20'
                           : 'cursor-not-allowed border-cream/10 text-cream/40'
                     }`}
                   >
