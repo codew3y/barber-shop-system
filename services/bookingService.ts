@@ -5,15 +5,77 @@ export const MIN_LEAD_MINUTES = 30;
 export const BOOKING_WINDOW_DAYS = 60;
 export const SLOT_STEP_MINUTES = 15;
 
+// --- Shop-timezone helpers (no external deps) ---
+
+// UTC offset in minutes for a timezone at a given instant.
+export function tzOffsetMinutes(timeZone: string, at: Date): number {
+  const dtf = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+  const parts = Object.fromEntries(
+    dtf.formatToParts(at).map((p) => [p.type, p.value])
+  );
+  const asUTC = Date.UTC(
+    Number(parts.year),
+    Number(parts.month) - 1,
+    Number(parts.day),
+    Number(parts.hour) === 24 ? 0 : Number(parts.hour),
+    Number(parts.minute),
+    Number(parts.second)
+  );
+  return Math.round((asUTC - at.getTime()) / 60_000);
+}
+
+// Shop-local wall parts for a UTC instant.
+export function shopParts(timeZone: string, at: Date): { dow: number; minutes: number } {
+  const dtf = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    weekday: 'short',
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: false,
+  });
+  const parts = Object.fromEntries(dtf.formatToParts(at).map((p) => [p.type, p.value]));
+  const dowMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  const hour = Number(parts.hour) === 24 ? 0 : Number(parts.hour);
+  return { dow: dowMap[parts.weekday], minutes: hour * 60 + Number(parts.minute) };
+}
+
+// Convert a shop-local wall time (YYYY-MM-DD + minutes since midnight) to UTC.
+// Two-pass offset resolution handles DST transitions correctly.
+export function wallToUtc(timeZone: string, date: string, minutes: number): Date {
+  const [y, m, d] = date.split('-').map(Number);
+  const wallAsUtcMs = Date.UTC(y, m - 1, d, 0, 0) + minutes * 60_000;
+  const firstPass = wallAsUtcMs - tzOffsetMinutes(timeZone, new Date(wallAsUtcMs)) * 60_000;
+  const secondPass = wallAsUtcMs - tzOffsetMinutes(timeZone, new Date(firstPass)) * 60_000;
+  return new Date(secondPass);
+}
+
 export interface SlotCheck {
   valid: boolean;
   error?: string;
   endTime?: Date;
 }
 
-// Minutes since midnight (UTC) for a @db.Time field read as Date.
-function timeToMinutes(t: Date): number {
+// Minutes since midnight for a @db.Time field (Date or "HH:MM:SS" string).
+function timeToMinutes(t: Date | string): number {
+  if (typeof t === 'string') {
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + m;
+  }
   return t.getUTCHours() * 60 + t.getUTCMinutes();
+}
+
+async function shopTimezone(shopId: string): Promise<string> {
+  const shop = await prisma.shop.findUnique({ where: { id: shopId }, select: { timezone: true } });
+  return shop?.timezone ?? 'UTC';
 }
 
 export async function validateSlotAvailability(
@@ -71,15 +133,15 @@ export async function validateSlotAvailability(
     return { valid: false, error: 'Time slot is no longer available' };
   }
 
-  // Working hours (day of week from UTC date)
-  const dayOfWeek = startTime.getUTCDay();
+  // Working hours in the shop's local time
+  const timeZone = await shopTimezone(shopId);
+  const local = shopParts(timeZone, startTime);
+  const endLocal = shopParts(timeZone, endTime);
   const availabilities = await prisma.availability.findMany({
-    where: { staffId, dayOfWeek, isActive: true },
+    where: { staffId, dayOfWeek: local.dow, isActive: true },
   });
-  const startMin = startTime.getUTCHours() * 60 + startTime.getUTCMinutes();
-  const endMin = endTime.getUTCHours() * 60 + endTime.getUTCMinutes();
   const withinHours = availabilities.some(
-    (a) => timeToMinutes(a.startTime) <= startMin && timeToMinutes(a.endTime) >= endMin
+    (a) => timeToMinutes(a.startTime) <= local.minutes && timeToMinutes(a.endTime) >= endLocal.minutes
   );
   if (!withinHours) {
     return { valid: false, error: 'Staff not available at this time' };
@@ -107,32 +169,33 @@ export interface TimeSlot {
   available: boolean;
 }
 
-// Generate slots for a shop-local date (YYYY-MM-DD, interpreted as UTC day)
+// Generate slots for a shop-local date (YYYY-MM-DD in the shop's timezone),
 // stepping every SLOT_STEP_MINUTES within the staff member's working hours.
+// Returned ISO strings are UTC; display them with the shop's timezone.
 export async function getAvailableSlots(
   staffId: string,
   serviceId: string,
   shopId: string,
   date: string
-): Promise<TimeSlot[]> {
+): Promise<{ slots: TimeSlot[]; timeZone: string }> {
+  const timeZone = await shopTimezone(shopId);
   const staffService = await prisma.staffService.findUnique({
     where: { staffId_serviceId: { staffId, serviceId } },
     include: { service: true },
   });
-  if (!staffService) return [];
+  if (!staffService) return { slots: [], timeZone };
   const service = staffService.service;
-  if (!service.isActive) return [];
+  if (!service.isActive) return { slots: [], timeZone };
 
   const duration = staffService.customDurationMinutes ?? service.durationMinutes;
   const totalMinutes = duration + service.bufferMinutes;
 
-  const day = new Date(`${date}T00:00:00Z`);
-  const dayOfWeek = new Date(`${date}T12:00:00Z`).getUTCDay();
+  const dayOfWeek = shopParts(timeZone, wallToUtc(timeZone, date, 720)).dow;
   const availabilities = await prisma.availability.findMany({
     where: { staffId, dayOfWeek, isActive: true },
     orderBy: { startTime: 'asc' },
   });
-  if (availabilities.length === 0) return [];
+  if (availabilities.length === 0) return { slots: [], timeZone };
 
   const now = new Date();
   const slots: TimeSlot[] = [];
@@ -140,7 +203,7 @@ export async function getAvailableSlots(
     const windowStart = timeToMinutes(a.startTime);
     const windowEnd = timeToMinutes(a.endTime);
     for (let m = windowStart; m + totalMinutes <= windowEnd; m += SLOT_STEP_MINUTES) {
-      const start = new Date(day.getTime() + m * 60_000);
+      const start = wallToUtc(timeZone, date, m);
       const end = new Date(start.getTime() + totalMinutes * 60_000);
       let available = true;
       if (start < new Date(now.getTime() + MIN_LEAD_MINUTES * 60_000)) {
@@ -152,7 +215,7 @@ export async function getAvailableSlots(
       slots.push({ startTime: start.toISOString(), endTime: end.toISOString(), available });
     }
   }
-  return slots;
+  return { slots, timeZone };
 }
 
 // Can this user act on this booking? Owner, assigned staff, or shop admin.

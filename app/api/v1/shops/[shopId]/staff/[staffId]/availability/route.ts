@@ -21,5 +21,5 @@ export async function GET(
   if (!staff) return jsonError('Staff not found', 404);
 
   const slots = await getAvailableSlots(staffId, parsed.data.serviceId, shopId, parsed.data.date);
-  return NextResponse.json({ slots });
+  return NextResponse.json(slots);
 }

@@ -110,10 +110,18 @@ export function SlotPicker({
   const { data, isLoading } = useQuery({
     queryKey: ['availability', shopId, staffId, serviceId, date],
     queryFn: () =>
-      apiJson<{ slots: TimeSlot[] }>(
+      apiJson<{ slots: TimeSlot[]; timeZone: string }>(
         `/api/v1/shops/${shopId}/staff/${staffId}/availability?date=${date}&serviceId=${serviceId}`
       ),
   });
+
+  const timeZone = data?.timeZone;
+  const fmtTime = (iso: string) =>
+    new Date(iso).toLocaleTimeString([], {
+      hour: 'numeric',
+      minute: '2-digit',
+      ...(timeZone ? { timeZone } : {}),
+    });
 
   const available = (data?.slots ?? []).filter((s) => s.available);
 
@@ -139,10 +147,7 @@ export function SlotPicker({
           ) : (
             <div className="grid grid-cols-3 gap-1.5">
               {(data?.slots ?? []).map((slot) => {
-                const time = new Date(slot.startTime).toLocaleTimeString([], {
-                  hour: 'numeric',
-                  minute: '2-digit',
-                });
+                const time = fmtTime(slot.startTime);
                 return (
                   <button
                     key={slot.startTime}
