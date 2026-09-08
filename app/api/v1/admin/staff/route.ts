@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { requireRole, jsonError } from '@/lib/api';
 import { isShopAdmin } from '@/lib/staff-scope';
+import { cleanOptional, cleanText } from '@/lib/sanitize';
 
 const createStaffSchema = z.object({
   userId: z.string().uuid(),
@@ -40,8 +41,8 @@ export async function POST(req: NextRequest) {
     create: {
       userId: parsed.data.userId,
       shopId: parsed.data.shopId,
-      bio: parsed.data.bio,
-      title: parsed.data.title ?? 'Hairstylist & Barber',
+      bio: parsed.data.bio ? cleanText(parsed.data.bio, 2000) : parsed.data.bio,
+      title: parsed.data.title ? cleanText(parsed.data.title, 100) : (parsed.data.title ?? 'Hairstylist & Barber'),
       specialties: parsed.data.specialties ?? [],
       commissionRate: parsed.data.commissionRate ?? 0,
     },

@@ -3,12 +3,16 @@ import { prisma } from '@/lib/prisma';
 import { requireAuth, jsonError } from '@/lib/api';
 import { HOLD_MINUTES, canActOnBooking, validateSlotAvailability } from '@/services/bookingService';
 import { queueBookingNotifications } from '@/services/notificationService';
+import { rateLimit } from '@/lib/rate-limit';
 import { rescheduleBookingSchema } from '@/schemas/booking';
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ bookingId: string }> }) {
   const auth = await requireAuth(req);
   if ('error' in auth) return auth.error;
   const { bookingId } = await params;
+
+  const limited = rateLimit(req, 'booking-mutate', 20, 60_000);
+  if (limited) return limited;
 
   let body: unknown;
   try {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireRole, jsonError } from '@/lib/api';
 import { resolveStaffProfile } from '@/lib/staff-scope';
+import { cleanOptional } from '@/lib/sanitize';
 import { createTimeOffSchema } from '@/schemas/staff';
 
 export async function GET(req: NextRequest) {
@@ -53,7 +54,7 @@ export async function POST(req: NextRequest) {
   }
 
   const timeOff = await prisma.timeOff.create({
-    data: { staffId: profile.id, startAt, endAt, reason: parsed.data.reason },
+    data: { staffId: profile.id, startAt, endAt, reason: cleanOptional(parsed.data.reason, 500) },
   });
   return NextResponse.json({ timeOff }, { status: 201 });
 }
