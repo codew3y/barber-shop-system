@@ -25,7 +25,23 @@ export default async function Home() {
     where: { isActive: true, deletedAt: null },
     orderBy: { createdAt: 'asc' },
     include: {
-      services: { where: { isActive: true, deletedAt: null }, orderBy: { price: 'asc' } },
+      services: {
+        where: { isActive: true, deletedAt: null },
+        orderBy: { price: 'asc' },
+        include: {
+          staff: {
+            select: {
+              customPrice: true,
+              staff: {
+                select: {
+                  id: true,
+                  user: { select: { firstName: true, lastName: true } },
+                },
+              },
+            },
+          },
+        },
+      },
       staff: {
         where: { isActive: true, deletedAt: null },
         include: { user: { select: { firstName: true, lastName: true } } },
@@ -92,16 +108,38 @@ export default async function Home() {
       <section id="services" className="mt-12 scroll-mt-20">
         <p className="text-xs font-semibold tracking-widest text-copper-200">THE MENU</p>
         <h2 className="font-display mb-5 text-3xl">Cuts & services</h2>
-        <ul className="grid gap-2 sm:grid-cols-2">
+        <ul className="grid gap-3 sm:grid-cols-2">
           {shop.services.map((s) => (
-            <li key={s.id} className="rounded-xl border border-cream/10 bg-pine-900 px-4 py-3">
-              <div className="flex justify-between font-medium">
-                <span>{s.name}</span>
-                  <span className="text-copper-200">{peso(s.price)}</span>
+            <li key={s.id} className="rounded-2xl border border-cream/10 bg-pine-900 p-5">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="font-display text-xl">{s.name}</span>
+                <span className="text-copper-200">{peso(s.price)}</span>
               </div>
-              <p className="text-sm text-cream/60">
+              {s.description && (
+                <p className="mt-1 line-clamp-1 text-sm text-cream/60">{s.description}</p>
+              )}
+              <p className="mt-1 text-xs text-cream/50">
                 {s.durationMinutes} min{s.category ? ` · ${s.category}` : ''}
               </p>
+              {s.staff.length > 0 && (
+                <div className="mt-3 border-t border-cream/10 pt-3">
+                  <p className="mb-1 text-xs font-semibold tracking-widest text-copper-200">
+                    PRICING PER BARBER
+                  </p>
+                  <ul className="grid gap-1">
+                  {s.staff.map((ss) => (
+                    <li key={ss.staff.id} className="flex justify-between text-sm">
+                      <span className="text-cream/70">
+                        {ss.staff.user.firstName} {ss.staff.user.lastName}
+                      </span>
+                      <span className="font-medium">
+                        {peso(ss.customPrice ?? s.price)}
+                      </span>
+                    </li>
+                  ))}
+                  </ul>
+                </div>
+              )}
             </li>
           ))}
         </ul>
@@ -110,41 +148,37 @@ export default async function Home() {
       {/* Barbers */}
       <section id="barbers" className="mt-12 scroll-mt-20">
         <p className="text-xs font-semibold tracking-widest text-copper-200">THE CHAIRS</p>
-        <h2 className="font-display mb-5 text-3xl">Meet the barbers</h2>
+        <h2 className="font-display mb-2 text-3xl">Meet the barbers</h2>
+        <p className="mb-5 max-w-xl text-cream/60">
+          Three chairs, one standard: every barber here cuts full-time, takes their time, and
+          guarantees the work.
+        </p>
         <ul className="grid gap-3 sm:grid-cols-3">
           {shop.staff.map((s) => (
-            <li key={s.id} className="rounded-2xl border border-cream/10 bg-pine-900 p-5 text-center">
-              <span className="font-display mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-copper-600/15 text-2xl text-copper-200">
+            <li key={s.id} className="rounded-2xl border border-cream/10 bg-pine-900 p-5">
+              <span className="font-display mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-copper-600/15 text-2xl text-copper-200">
                 {s.user.firstName.charAt(0)}
               </span>
               <p className="font-medium">
                 {s.user.firstName} {s.user.lastName}
               </p>
               <p className="mt-0.5 text-xs font-semibold tracking-widest text-copper-200">
-                {(s.specialties[0] ?? 'House Barber').toUpperCase()}
+                {(s.title ?? 'Hairstylist & Barber').toUpperCase()}
               </p>
-              {s.bio && <p className="mx-auto mt-2 max-w-xs text-sm text-cream/60">{s.bio}</p>}
-              <Link
-                href={`/booking/${shop.id}?staff=${s.id}`}
-                className="mt-4 inline-block rounded bg-copper-600 px-5 py-2 text-sm font-medium text-cream hover:bg-copper-700"
-              >
-                Book with {s.user.firstName}
-              </Link>
+              {s.bio && <p className="mt-2 text-sm text-cream/60">{s.bio}</p>}
+              <div className="mt-3 text-right">
+                <Link
+                  href={`/booking/${shop.id}?staff=${s.id}`}
+                  className="text-sm font-medium text-copper-200 hover:underline"
+                >
+                  Book with {s.user.firstName} →
+                </Link>
+              </div>
             </li>
           ))}
         </ul>
       </section>
 
-      {/* Visit */}
-      <section id="visit" className="mt-12 scroll-mt-20 rounded-3xl border border-cream/10 bg-black/30 px-6 py-8 sm:px-10">
-        <p className="text-xs font-semibold tracking-widest text-copper-200">VISIT</p>
-        <h2 className="font-display mb-3 text-3xl">Find the house</h2>
-        <p className="text-cream/70">
-          {shop.addressLine1}, {shop.city}, {shop.state} {shop.postalCode}
-        </p>
-        <p className="mt-1 text-cream/70">{shop.phone}</p>
-        <p className="mt-1 text-sm text-cream/60">Mon – Sat · 9:00 – 18:00 · Walk-ins welcome where the queue allows.</p>
-      </section>
     </div>
   );
 }

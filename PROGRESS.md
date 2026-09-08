@@ -61,6 +61,7 @@
 | 2026-09-07 | Modern type per feedback: Space Grotesk display + Geist body (serif/Arial gone). Screenshot-verified. |
 | 2026-09-07 | Removed lower-left "N" watermark (Next.js dev indicator) via devIndicators:false. Verified gone. |
 | 2026-09-07 | Per-barber booking: cards show title + original bio summary + "Book with {name}" deep-linking to flow with barber preselected (?staff=). PHP currency end-to-end (₱, payment default). System-sans extrabold type. E2E green. |
+| 2026-09-08 | Home content batch: 3 barbers (title field + migration), text-style Book links, services with per-barber pricing + summaries, barbers intro line, scroll-spy nav highlight, footer location block, visit section removed. E2E green. |
 
 ## Quickstart (fresh machine / resume)
 
