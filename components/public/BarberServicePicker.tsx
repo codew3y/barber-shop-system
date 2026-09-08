@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { apiJson } from '@/lib/api-client';
+import { peso } from '@/lib/format';
 import type { Service, StaffMember } from '@/lib/types';
 
 function offeredIds(staff: StaffMember | null | undefined): string[] {
@@ -79,6 +80,9 @@ export function BarberServicePicker({
             {services.map((s) => {
               const unavailable = !!staff && !staffServiceIds.includes(s.id);
               const selected = service?.id === s.id;
+              const mine = staff
+                ? ((staff.services ?? []).find((x) => x.service.id === s.id)?.customPrice ?? s.price)
+                : s.price;
               return (
                 <button
                   key={s.id}
@@ -94,7 +98,9 @@ export function BarberServicePicker({
                 >
                   <span className="flex items-center justify-between gap-2">
                     <span className={`font-medium ${unavailable ? 'line-through' : ''}`}>{s.name}</span>
-                    <span className={unavailable ? '' : 'text-copper-200'}>{s.priceRange ?? ''}</span>
+                    <span className={unavailable ? '' : 'text-copper-200'}>
+                      {staff ? peso(mine) : (s.priceRange ?? '')}
+                    </span>
                   </span>
                   <span className="text-xs text-cream/50">
                     {unavailable ? '· unavailable for this barber' : `· ${s.durationMinutes} min`}

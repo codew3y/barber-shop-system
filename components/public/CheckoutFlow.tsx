@@ -24,7 +24,7 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
     useBookingStore();
   const { user, setSession } = useAuthStore();
   const [notes, setNotes] = useState('');
-  const [guest, setGuest] = useState({ firstName: '', lastName: '', email: '', password: '' });
+  const [guest, setGuest] = useState({ firstName: '', lastName: '', phone: '' });
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -52,13 +52,13 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
 
   async function ensureAccount(): Promise<boolean> {
     if (user) return true;
-    if (!guest.firstName || !guest.lastName || !guest.email || guest.password.length < 8) {
-      setError('Add your name, email, and a password (8+ chars) — we open your account on the spot.');
+    if (!guest.firstName || !guest.lastName || guest.phone.replace(/\D/g, '').length < 7) {
+      setError('Add your name and phone number — no password needed, we keep the booking under your number.');
       return false;
     }
     try {
       const data = await apiJson<{ user: never; accessToken: string; refreshToken: string }>(
-        '/api/v1/auth/register',
+        '/api/v1/auth/guest',
         { method: 'POST', body: JSON.stringify(guest) }
       );
       setSession(data.user, data.accessToken, data.refreshToken);
@@ -199,13 +199,12 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
           </dl>
           {!user && (
             <div className="mb-4 grid gap-2">
-              <p className="text-sm text-cream/60">Checking out as a guest — we&apos;ll open your account:</p>
+              <p className="text-sm text-cream/60">Checking out as a guest — just your name and number:</p>
               <div className="grid grid-cols-2 gap-2">
                 <input placeholder="First name" value={guest.firstName} onChange={(e) => setGuest({ ...guest, firstName: e.target.value })} className="field" />
                 <input placeholder="Last name" value={guest.lastName} onChange={(e) => setGuest({ ...guest, lastName: e.target.value })} className="field" />
               </div>
-              <input placeholder="Email" type="email" value={guest.email} onChange={(e) => setGuest({ ...guest, email: e.target.value })} className="field" />
-              <input placeholder="Password (8+ chars)" type="password" value={guest.password} onChange={(e) => setGuest({ ...guest, password: e.target.value })} className="field" />
+              <input placeholder="Phone number" type="tel" value={guest.phone} onChange={(e) => setGuest({ ...guest, phone: e.target.value })} className="field" />
             </div>
           )}
           <label className="mb-4 block text-sm">
