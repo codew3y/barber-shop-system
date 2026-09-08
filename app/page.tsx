@@ -78,13 +78,13 @@ export default async function Home() {
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
             href={`/booking/${shop.id}`}
-            className="rounded bg-copper-600 px-7 py-3 font-medium text-cream hover:bg-copper-700"
+            className="rounded bg-copper-600 px-7 py-3 font-medium text-cream transition-all duration-150 hover:bg-copper-500 hover:shadow-lg hover:shadow-copper-600/30 active:scale-[0.98]"
           >
             Book your chair
           </Link>
           <Link
             href="#services"
-            className="rounded border border-cream/25 px-7 py-3 hover:bg-cream/10"
+            className="rounded border border-cream/25 px-7 py-3 transition-all duration-150 hover:border-copper-500/60 hover:bg-cream/10 active:scale-[0.98]"
           >
             View the menu
           </Link>
@@ -94,7 +94,7 @@ export default async function Home() {
       {/* Features */}
       <section className="mt-6 grid gap-4 sm:grid-cols-3">
         {features.map((f) => (
-          <div key={f.title} className="rounded-2xl border border-cream/10 bg-pine-900 p-5">
+          <div key={f.title} className="rounded-2xl border border-cream/10 bg-pine-900 p-5 transition-all duration-200 hover:-translate-y-1 hover:border-copper-500/50 hover:shadow-xl hover:shadow-copper-600/10">
             <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-copper-600/15 text-lg text-copper-200">
               {f.icon}
             </span>
@@ -110,7 +110,7 @@ export default async function Home() {
         <h2 className="font-display mb-5 text-3xl">Cuts & services</h2>
         <ul className="grid gap-3 sm:grid-cols-2">
           {shop.services.map((s) => (
-            <li key={s.id} className="rounded-2xl border border-cream/10 bg-pine-900 p-5">
+            <li key={s.id} className="rounded-2xl border border-cream/10 bg-pine-900 p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-copper-500/50 hover:shadow-lg hover:shadow-copper-600/10">
               <div className="flex items-baseline justify-between gap-2">
                 <span className="font-display text-xl">{s.name}</span>
                 <span className="text-copper-200">
@@ -163,7 +163,7 @@ export default async function Home() {
         </p>
         <ul className="grid gap-3 sm:grid-cols-3">
           {shop.staff.map((s) => (
-            <li key={s.id} className="rounded-2xl border border-cream/10 bg-pine-900 p-5">
+            <li key={s.id} className="rounded-2xl border border-cream/10 bg-pine-900 p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-copper-500/50 hover:shadow-lg hover:shadow-copper-600/10">
               <span className="font-display mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-copper-600/15 text-2xl text-copper-200">
                 {s.user.firstName.charAt(0)}
               </span>
