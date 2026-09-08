@@ -29,13 +29,13 @@ function Nav() {
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
         <BrandMark />
         <nav className="flex items-center gap-3 text-sm sm:gap-5">
-          <Link href="/#services" className="hidden hover:underline sm:inline">
+          <Link href="/#services" className="hidden font-semibold hover:underline sm:inline">
             Services
           </Link>
-          <Link href="/#barbers" className="hidden hover:underline sm:inline">
+          <Link href="/#barbers" className="hidden font-semibold hover:underline sm:inline">
             Barbers
           </Link>
-          <Link href="/#visit" className="hidden hover:underline sm:inline">
+          <Link href="/#visit" className="hidden font-semibold hover:underline sm:inline">
             Visit
           </Link>
           {ready && user ? (
