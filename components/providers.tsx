@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
+import { CalendarCheck, LogIn } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 
 function BrandMark() {
@@ -12,7 +13,7 @@ function BrandMark() {
       <span className="font-display flex h-9 w-9 items-center justify-center rounded-full bg-pine-900 text-lg text-copper-200">
         ✂
       </span>
-      <span className="font-display text-lg tracking-wide">BarberHouse</span>
+      <span className="font-display text-lg uppercase tracking-wide">BarberHouse</span>
     </Link>
   );
 }
@@ -59,14 +60,16 @@ function Nav() {
             <>
               <Link
                 href="/login"
-                className="rounded border border-cream/25 px-3 py-1.5 hover:bg-cream/10"
+                className="flex items-center gap-1.5 rounded border border-cream/25 px-3 py-1.5 hover:bg-cream/10"
               >
+                <LogIn size={15} />
                 Sign in
               </Link>
               <Link
                 href="/register"
-                className="rounded bg-copper-600 px-4 py-1.5 font-medium text-cream hover:bg-copper-700"
+                className="flex items-center gap-1.5 rounded bg-copper-600 px-4 py-1.5 font-medium text-cream hover:bg-copper-700"
               >
+                <CalendarCheck size={15} />
                 Book now
               </Link>
             </>
@@ -82,7 +85,7 @@ function Footer() {
     <footer className="mt-12 border-t border-cream/10 bg-black/30 text-cream/80">
       <div className="mx-auto grid max-w-5xl gap-8 px-4 py-10 text-sm sm:grid-cols-3">
         <div>
-          <p className="font-display text-lg text-cream">BarberHouse</p>
+          <p className="font-display text-lg uppercase text-cream">BarberHouse</p>
           <p className="mt-2 max-w-xs">
             A booking house for classic cuts, sharp fades, and unhurried straight-razor shaves.
           </p>

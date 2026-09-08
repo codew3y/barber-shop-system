@@ -20,13 +20,17 @@
   --color-copper-200: #f3b3bb;
   --color-copper-100: #fbe7e9;
 
-  --font-display: "Space Grotesk", "Geist", system-ui, sans-serif;
+  --font-display: "Oswald", "Arial Narrow", system-ui, sans-serif;
   --font-sans: "Geist", system-ui, -apple-system, sans-serif;
 }
 
 :root {
   --background: var(--color-pine-950);
   --foreground: var(--color-cream);
+}
+
+html {
+  font-size: 112.5%; /* 18px base — lifts all rem-based type a step for readability */
 }
 
 body {
@@ -37,6 +41,7 @@ body {
 
 .font-display {
   font-family: var(--font-display);
+  font-weight: 700;
   letter-spacing: -0.02em;
 }
 
