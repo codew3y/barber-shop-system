@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
+import { CalendarCheck, LogIn } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 
 function BrandMark() {
@@ -59,14 +60,16 @@ function Nav() {
             <>
               <Link
                 href="/login"
-                className="rounded border border-cream/25 px-3 py-1.5 hover:bg-cream/10"
+                className="flex items-center gap-1.5 rounded border border-cream/25 px-3 py-1.5 hover:bg-cream/10"
               >
+                <LogIn size={15} />
                 Sign in
               </Link>
               <Link
                 href="/register"
-                className="rounded bg-copper-600 px-4 py-1.5 font-medium text-cream hover:bg-copper-700"
+                className="flex items-center gap-1.5 rounded bg-copper-600 px-4 py-1.5 font-medium text-cream hover:bg-copper-700"
               >
+                <CalendarCheck size={15} />
                 Book now
               </Link>
             </>
