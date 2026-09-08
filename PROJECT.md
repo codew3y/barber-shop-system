@@ -139,18 +139,18 @@ A production-grade barber shop booking system with multi-tenant support, real-ti
 ## PHASE 4: STAFF & ADMIN DASHBOARD (Weeks 7-8)
 
 ### Step 4.1: Staff Dashboard
-- [ ] Build daily schedule view
-- [ ] Implement time-off management
-- [ ] Build booking management (accept/reject)
-- [ ] Implement no-show marking
-- [ ] Build earnings view
+- [x] Build daily schedule view
+- [x] Implement time-off management
+- [x] Build booking management (accept/reject)
+- [x] Implement no-show marking
+- [x] Build earnings view
 
 ### Step 4.2: Admin Dashboard
-- [ ] Build staff management interface
-- [ ] Build service/pricing management
-- [ ] Implement booking rules configuration
-- [ ] Build analytics dashboard (revenue, utilization)
-- [ ] Implement shop settings management
+- [x] Build staff management interface
+- [x] Build service/pricing management
+- [x] Implement booking rules configuration
+- [x] Build analytics dashboard (revenue, utilization)
+- [x] Implement shop settings management
 
 ### Step 4.3: Real-time Updates
 - [ ] Implement WebSocket for live schedule updates
