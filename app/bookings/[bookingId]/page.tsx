@@ -62,10 +62,13 @@ export default function BookingConfirmationPage({
         <p className="mb-6 text-sm text-cream/60">No messages from the house yet.</p>
       )}
 
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3">
         <Link href="/dashboard" className="btn-primary">
           Track in dashboard
         </Link>
+        <a href={`/api/v1/bookings/${bookingId}/ics`} className="btn-ghost">
+          Add to calendar (.ics)
+        </a>
         <Link href="/" className="btn-ghost">
           Book another
         </Link>
