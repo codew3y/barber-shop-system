@@ -58,6 +58,7 @@
 | 2026-09-07 | Scope pivot: single-brand project, removed multi-shop catalog (deleted ShopBrowser, home is now BarberHouse landing with menu/barbers/visit). Reseeded BarberHouse shop. Build + e2e green. |
 | 2026-09-07 | Squared all buttons/CTAs (rounded-full → subtle rounded) per feedback; avatar circles kept round. |
 | 2026-09-07 | Palette swap per feedback: charcoal + crimson (brown/copper gone). Screenshot-verified. |
+| 2026-09-07 | Modern type per feedback: Space Grotesk display + Geist body (serif/Arial gone). Screenshot-verified. |
 
 ## Quickstart (fresh machine / resume)
 
