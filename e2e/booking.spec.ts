@@ -11,19 +11,15 @@ test('guest books end-to-end and tracks in dashboard', async ({ page }) => {
   const email = `e2e${Date.now()}@example.com`;
   const date = nextWeekday();
 
-  // Home → shop browser
+  // Home → booking flow
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Chairs near you' })).toBeVisible();
-  await page.getByRole('link', { name: /Demo Barbershop/ }).click();
-
-  // Shop detail → booking flow
-  await expect(page.getByRole('heading', { name: 'Demo Barbershop' })).toBeVisible();
-  await page.getByRole('link', { name: 'Book a chair' }).click();
+  await expect(page.getByRole('heading', { name: 'Cuts & services' })).toBeVisible();
+  await page.getByRole('link', { name: 'Book your chair' }).first().click();
 
   // Step 1: service
   await page.getByRole('button', { name: /Classic Cut/ }).click();
   // Step 2: staff
-  await page.getByRole('button', { name: /Demo Barber/ }).click();
+  await page.getByRole('button', { name: /Alex Reyes/ }).click();
   // Step 3: slot — set date, pick first available slot
   await page.locator('input[type="date"]').fill(date);
   const slotButton = page.locator('button:not([disabled])', { hasText: /AM|PM/ }).first();

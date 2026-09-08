@@ -23,8 +23,8 @@
 }
 
 :root {
-  --background: var(--color-cream);
-  --foreground: var(--color-espresso);
+  --background: var(--color-pine-950);
+  --foreground: var(--color-cream);
 }
 
 body {
@@ -39,21 +39,27 @@ body {
 
 @layer components {
   .card {
-    @apply rounded-2xl border border-espresso/10 bg-white/70 p-4;
+    @apply rounded-2xl border border-cream/10 bg-pine-900 p-4;
   }
   .field {
-    @apply rounded-lg border border-espresso/20 bg-white px-3 py-2 outline-none placeholder:text-bark/60 focus:border-pine-700;
+    @apply rounded-lg border border-cream/15 bg-pine-950 px-3 py-2 text-cream outline-none placeholder:text-cream/40 focus:border-copper-500;
   }
   .btn-primary {
     @apply rounded-full bg-copper-600 px-5 py-2.5 font-medium text-cream hover:bg-copper-700 disabled:opacity-50;
   }
   .btn-ghost {
-    @apply rounded-full border border-espresso/20 px-5 py-2.5 hover:bg-parchment;
+    @apply rounded-full border border-cream/25 px-5 py-2.5 text-cream hover:bg-cream/10;
   }
   .pickable {
-    @apply rounded-xl border border-espresso/15 bg-white/70 p-4 text-left transition hover:border-copper-500/60;
+    @apply rounded-xl border border-cream/15 bg-pine-900 p-4 text-left text-cream transition hover:border-copper-500/60;
   }
   .pickable-selected {
-    @apply border-pine-800 bg-pine-50 ring-1 ring-pine-800;
+    @apply border-copper-500 bg-copper-600/10 ring-1 ring-copper-500;
+  }
+  .muted {
+    @apply text-cream/60;
+  }
+  .band {
+    @apply rounded-3xl border border-cream/10 bg-pine-900 text-cream;
   }
 }
