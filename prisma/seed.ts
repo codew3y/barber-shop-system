@@ -146,14 +146,23 @@ async function main() {
     });
     staffIds.push(staff.id);
 
-    // Mon–Fri 09:00–17:00 UTC
-    for (let dow = 1; dow <= 5; dow++) {
+    // Mon–Sat 09:00–18:00, Sun 10:00–16:00 UTC
+    const hours: Record<number, [string, string]> = {
+      0: ['1970-01-01T10:00:00Z', '1970-01-01T16:00:00Z'],
+      1: ['1970-01-01T09:00:00Z', '1970-01-01T18:00:00Z'],
+      2: ['1970-01-01T09:00:00Z', '1970-01-01T18:00:00Z'],
+      3: ['1970-01-01T09:00:00Z', '1970-01-01T18:00:00Z'],
+      4: ['1970-01-01T09:00:00Z', '1970-01-01T18:00:00Z'],
+      5: ['1970-01-01T09:00:00Z', '1970-01-01T18:00:00Z'],
+      6: ['1970-01-01T09:00:00Z', '1970-01-01T18:00:00Z'],
+    };
+    for (const [dow, [open, close]] of Object.entries(hours)) {
       await prisma.availability.create({
         data: {
           staffId: staff.id,
-          dayOfWeek: dow,
-          startTime: new Date('1970-01-01T09:00:00Z'),
-          endTime: new Date('1970-01-01T17:00:00Z'),
+          dayOfWeek: Number(dow),
+          startTime: new Date(open),
+          endTime: new Date(close),
         },
       });
     }
