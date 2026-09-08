@@ -56,6 +56,7 @@
 | 2026-09-07 | UI restyle inspired by gentlemensquarter layout (badge hero, dual CTA, feature trio, catalog) with own theme: cream/pine-green/copper + serif display ("The Grooming Ledger"). Build + e2e green, screenshot-verified. |
 | 2026-09-07 | Renamed brand to BarberHouse (nav, footer, metadata, package name). Initialized git, first push to github.com/codew3y/barber-shop-system. |
 | 2026-09-07 | Scope pivot: single-brand project, removed multi-shop catalog (deleted ShopBrowser, home is now BarberHouse landing with menu/barbers/visit). Reseeded BarberHouse shop. Build + e2e green. |
+| 2026-09-07 | Squared all buttons/CTAs (rounded-none) per feedback; avatar circles kept round. |
 
 ## Quickstart (fresh machine / resume)
 

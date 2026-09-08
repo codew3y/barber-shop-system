@@ -45,13 +45,13 @@ body {
     @apply rounded-lg border border-cream/15 bg-pine-950 px-3 py-2 text-cream outline-none placeholder:text-cream/40 focus:border-copper-500;
   }
   .btn-primary {
-    @apply rounded-full bg-copper-600 px-5 py-2.5 font-medium text-cream hover:bg-copper-700 disabled:opacity-50;
+    @apply rounded-none bg-copper-600 px-5 py-2.5 font-medium text-cream hover:bg-copper-700 disabled:opacity-50;
   }
   .btn-ghost {
-    @apply rounded-full border border-cream/25 px-5 py-2.5 text-cream hover:bg-cream/10;
+    @apply rounded-none border border-cream/25 px-5 py-2.5 text-cream hover:bg-cream/10;
   }
   .pickable {
-    @apply rounded-xl border border-cream/15 bg-pine-900 p-4 text-left text-cream transition hover:border-copper-500/60;
+    @apply rounded-none border border-cream/15 bg-pine-900 p-4 text-left text-cream transition hover:border-copper-500/60;
   }
   .pickable-selected {
     @apply border-copper-500 bg-copper-600/10 ring-1 ring-copper-500;
