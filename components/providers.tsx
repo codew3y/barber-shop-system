@@ -52,7 +52,7 @@ function Nav() {
   const linkActive = (id: string) => pathname === '/' && activeSection === id;
 
   const linkClass = (active: boolean) =>
-    `hidden font-semibold hover:underline sm:inline ${active ? 'text-copper-500' : ''}`;
+    `hidden font-semibold sm:inline ${active ? 'text-copper-500' : ''}`;
 
   return (
     <header className="sticky top-0 z-10 border-b border-cream/10 bg-pine-950/95 backdrop-blur">
