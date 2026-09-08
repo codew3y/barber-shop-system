@@ -131,6 +131,7 @@ model Staff {
   userId         String    @map("user_id") @db.Uuid
   shopId         String    @map("shop_id") @db.Uuid
   bio            String?
+  title          String?   @default("Hairstylist & Barber")
   specialties    String[]
   isActive       Boolean   @default(true) @map("is_active")
   commissionRate Decimal   @default(0.00) @map("commission_rate") @db.Decimal(5, 2)

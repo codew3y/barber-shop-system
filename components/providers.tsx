@@ -3,10 +3,12 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { CalendarCheck, LogIn } from 'lucide-react';
+import { CalendarCheck, LogIn, MapPin } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
+import { apiJson } from '@/lib/api-client';
+import type { Shop } from '@/lib/types';
 
 function BrandMark() {
   return (
@@ -22,18 +24,33 @@ function BrandMark() {
 function Nav() {
   const { user, ready, clear, hydrate } = useAuthStore();
   const pathname = usePathname();
-  const [hash, setHash] = useState('');
+  const [activeSection, setActiveSection] = useState('');
   useEffect(() => {
     void hydrate();
   }, [hydrate]);
-  useEffect(() => {
-    const update = () => setHash(window.location.hash);
-    update();
-    window.addEventListener('hashchange', update);
-    return () => window.removeEventListener('hashchange', update);
-  }, []);
 
-  const sectionActive = (id: string) => pathname === '/' && hash === `#${id}`;
+  // Scroll-spy: highlight follows the section in view (works for clicks and scrolling).
+  useEffect(() => {
+    if (pathname !== '/') {
+      setActiveSection('');
+      return;
+    }
+    const ids = ['services', 'barbers'];
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) setActiveSection(entry.target.id);
+        }
+      },
+      { rootMargin: '-40% 0px -55% 0px' }
+    );
+    const elements = ids
+      .map((id) => document.getElementById(id))
+      .filter((el): el is HTMLElement => el !== null);
+    elements.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [pathname]);
+
   const linkClass = (active: boolean) =>
     `hidden font-semibold hover:underline sm:inline ${active ? 'text-copper-500' : ''}`;
 
@@ -42,14 +59,11 @@ function Nav() {
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
         <BrandMark />
         <nav className="flex items-center gap-3 text-sm sm:gap-5">
-          <Link href="/#services" className={linkClass(sectionActive('services'))}>
+          <Link href="/#services" className={linkClass(activeSection === 'services')}>
             Services
           </Link>
-          <Link href="/#barbers" className={linkClass(sectionActive('barbers'))}>
+          <Link href="/#barbers" className={linkClass(activeSection === 'barbers')}>
             Barbers
-          </Link>
-          <Link href="/#visit" className={linkClass(sectionActive('visit'))}>
-            Visit
           </Link>
           {ready && user ? (
             <>
@@ -94,6 +108,13 @@ function Nav() {
 }
 
 function Footer() {
+  const { data } = useQuery({
+    queryKey: ['shop-info'],
+    queryFn: () => apiJson<{ shops: Shop[] }>('/api/v1/shops?limit=1'),
+    staleTime: 5 * 60_000,
+  });
+  const shop = data?.shops[0];
+
   return (
     <footer className="mt-12 border-t border-cream/10 bg-black/30 text-cream/80">
       <div className="mx-auto grid max-w-5xl gap-8 px-4 py-10 text-sm sm:grid-cols-3">
@@ -104,8 +125,17 @@ function Footer() {
           </p>
         </div>
         <div>
-          <p className="mb-2 font-semibold tracking-widest text-copper-200">VISIT</p>
-          <p>Walk-ins welcome where the queue allows.</p>
+          <p className="mb-2 flex items-center gap-1.5 font-semibold tracking-widest text-copper-200">
+            <MapPin size={14} /> WHERE ARE WE LOCATED
+          </p>
+          {shop ? (
+            <>
+              <p>{shop.addressLine1}, {shop.city}, {shop.state} {shop.postalCode}</p>
+              <p className="mt-1">{shop.phone}</p>
+            </>
+          ) : (
+            <p>Loading address…</p>
+          )}
           <p className="mt-1">Mon – Sat · 9:00 – 18:00</p>
         </div>
         <div>

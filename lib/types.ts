@@ -25,6 +25,7 @@ export interface Service {
 export interface StaffMember {
   id: string;
   bio: string | null;
+  title: string | null;
   specialties: string[];
   user: { firstName: string; lastName: string; avatarUrl: string | null };
   services?: { service: { id: string; name: string } }[];
