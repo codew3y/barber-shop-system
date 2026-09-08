@@ -5,23 +5,26 @@ import { useRouter } from 'next/navigation';
 import { useBookingStore } from '@/stores/bookingStore';
 import { useAuthStore } from '@/stores/authStore';
 import { apiJson } from '@/lib/api-client';
-import { peso } from '@/lib/format';
+import { depositFor, peso } from '@/lib/format';
 import type { Booking, StaffMember } from '@/lib/types';
-import { ServiceSelector } from './ServiceSelector';
-import { StaffPicker } from './StaffPicker';
+import { ArrowRight, CalendarClock, ClipboardCheck, Scissors } from 'lucide-react';
+import { BarberServicePicker } from './BarberServicePicker';
 import { SlotPicker } from './SlotPicker';
+const steps = [
+  { key: 'service', label: 'Barber & Service', Icon: Scissors },
+  { key: 'slot', label: 'Time', Icon: CalendarClock },
+  { key: 'checkout', label: 'Review', Icon: ClipboardCheck },
+] as const;
 
-const steps = ['service', 'barber', 'time', 'review'] as const;
-const stepFor = (s: string) =>
-  s === 'service' ? 0 : s === 'staff' ? 1 : s === 'slot' ? 2 : 3;
+const stepIndex = (s: string) => (s === 'service' ? 0 : s === 'slot' ? 1 : 2);
 
 export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: string; shopName: string; initialStaffId?: string }) {
   const router = useRouter();
-  const { service, staff, slot, step, start, setService, setStaff, setSlot, setStep, reset } =
+  const { service, staff, slot, step, start, setService, setStaff, clearStaff, setSlot, setStep, reset } =
     useBookingStore();
   const { user, setSession } = useAuthStore();
   const [notes, setNotes] = useState('');
-  const [guest, setGuest] = useState({ firstName: '', lastName: '', email: '', password: '' });
+  const [guest, setGuest] = useState({ firstName: '', lastName: '', phone: '' });
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -49,13 +52,13 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
 
   async function ensureAccount(): Promise<boolean> {
     if (user) return true;
-    if (!guest.firstName || !guest.lastName || !guest.email || guest.password.length < 8) {
-      setError('Add your name, email, and a password (8+ chars) — we open your account on the spot.');
+    if (!guest.firstName || !guest.lastName || guest.phone.replace(/\D/g, '').length < 7) {
+      setError('Add your name and phone number — no password needed, we keep the booking under your number.');
       return false;
     }
     try {
       const data = await apiJson<{ user: never; accessToken: string; refreshToken: string }>(
-        '/api/v1/auth/register',
+        '/api/v1/auth/guest',
         { method: 'POST', body: JSON.stringify(guest) }
       );
       setSession(data.user, data.accessToken, data.refreshToken);
@@ -95,72 +98,115 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
     }
   }
 
-  const go = (s: 'service' | 'staff' | 'slot' | 'checkout') => setStep(s);
+  const go = (s: 'service' | 'slot' | 'checkout') => {
+    setError(null);
+    setStep(s);
+  };
+
+  const canContinueDetails = !!service && !!staff;
+  const canContinueSlot = !!slot;
 
   return (
     <div>
       <p className="text-xs font-semibold tracking-widest text-copper-200">BOOKING — {shopName.toUpperCase()}</p>
-      <h1 className="font-display mb-5 text-3xl">Take a chair in four steps</h1>
+      <h1 className="font-display mb-3 text-2xl">Take a chair in three steps</h1>
 
-      <ol className="mb-6 flex flex-wrap gap-2 text-sm">
-        {steps.map((label, i) => (
+      <ol className="mb-4 flex flex-wrap gap-2 text-sm">
+        {steps.map(({ key, label, Icon }, i) => (
           <li
-            key={label}
-            className={`rounded px-3 py-1 ${
-              stepFor(step) === i
+            key={key}
+            className={`flex items-center gap-1.5 rounded px-3 py-1 ${
+              stepIndex(step) === i
                 ? 'bg-pine-900 font-medium text-cream'
-                : stepFor(step) > i
+                : stepIndex(step) > i
                   ? 'bg-copper-600/15 text-copper-200'
                   : 'bg-cream/5 text-cream/60'
             }`}
           >
-            {i + 1}. {label}
+            <Icon size={15} /> {label}
           </li>
         ))}
       </ol>
 
       {step === 'service' && (
-        <ServiceSelector shopId={shopId} selected={service} onSelect={setService} />
-      )}
-      {step === 'staff' && service && (
-        <>
-          <button onClick={() => go('service')} className="mb-3 text-sm text-copper-200 underline">
-            ← Swap service ({service.name})
-          </button>
-          <StaffPicker shopId={shopId} selected={staff} onSelect={setStaff} />
-        </>
+        <div>
+          <BarberServicePicker
+            shopId={shopId}
+            service={service}
+            staff={staff}
+            onSelectService={(s) => {
+              setService(s);
+              if (staff && !(staff.services ?? []).some((x) => x.service.id === s.id)) {
+                clearStaff();
+              }
+            }}
+            onSelectStaff={setStaff}
+          />
+          {error && <p className="mt-3 text-sm text-red-300">{error}</p>}
+          <div className="mt-3">
+            <button
+              onClick={() => {
+                if (!canContinueDetails) {
+                  setError('Pick a barber and a service to continue.');
+                  return;
+                }
+                go('slot');
+              }}
+              className="btn-primary flex items-center gap-1.5"
+            >
+              Continue <ArrowRight size={15} />
+            </button>
+          </div>
+        </div>
       )}
       {step === 'slot' && service && staff && (
         <>
-          <button onClick={() => go('staff')} className="mb-3 text-sm text-copper-200 underline">
-            ← Swap barber ({staff.user.firstName})
-          </button>
           <SlotPicker
             shopId={shopId}
             staffId={staff.id}
             serviceId={service.id}
+            barberName={staff.user.firstName}
             selected={slot}
             onSelect={setSlot}
           />
+          {error && <p className="mt-3 text-sm text-red-300">{error}</p>}
+          <div className="mt-4 flex gap-2">
+            <button onClick={() => go('service')} className="btn-ghost">
+              ← Back
+            </button>
+            <button
+              onClick={() => {
+                if (!canContinueSlot) {
+                  setError('Pick a time to continue.');
+                  return;
+                }
+                go('checkout');
+              }}
+              className="btn-primary flex items-center gap-1.5"
+            >
+              Continue <ArrowRight size={15} />
+            </button>
+          </div>
         </>
       )}
       {step === 'checkout' && service && staff && slot && (
         <div className="card">
           <h2 className="font-display mb-2 text-xl">The ticket</h2>
           <dl className="mb-4 grid gap-1 text-sm">
-            <div className="flex justify-between"><dt className="text-cream/60">Cut</dt><dd className="font-medium">{service.name} — {peso(service.price)}</dd></div>
+            <div className="flex justify-between"><dt className="text-cream/60">Cut</dt><dd className="font-medium">{service.name}</dd></div>
             <div className="flex justify-between"><dt className="text-cream/60">Barber</dt><dd className="font-medium">{staff.user.firstName} {staff.user.lastName}</dd></div>
             <div className="flex justify-between"><dt className="text-cream/60">Chair time</dt><dd className="font-medium">{new Date(slot.startTime).toLocaleString()}</dd></div>
+            <div className="flex justify-between border-t border-cream/10 pt-1"><dt className="text-cream/60">Total</dt><dd className="font-medium">{peso(staff.services?.find((x) => x.service.id === service.id)?.customPrice ?? service.price)}</dd></div>
+            <div className="flex justify-between"><dt className="text-cream/60">Downpayment due</dt><dd className="font-medium text-copper-200">{peso(depositFor(Number(staff.services?.find((x) => x.service.id === service.id)?.customPrice ?? service.price)))}</dd></div>
           </dl>
           {!user && (
             <div className="mb-4 grid gap-2">
-              <p className="text-sm text-cream/60">Checking out as a guest — we&apos;ll open your account:</p>
+              <p className="text-sm text-cream/60">Checking out as a guest — just your name and number:</p>
               <div className="grid grid-cols-2 gap-2">
                 <input placeholder="First name" value={guest.firstName} onChange={(e) => setGuest({ ...guest, firstName: e.target.value })} className="field" />
                 <input placeholder="Last name" value={guest.lastName} onChange={(e) => setGuest({ ...guest, lastName: e.target.value })} className="field" />
               </div>
-              <input placeholder="Email" type="email" value={guest.email} onChange={(e) => setGuest({ ...guest, email: e.target.value })} className="field" />
-              <input placeholder="Password (8+ chars)" type="password" value={guest.password} onChange={(e) => setGuest({ ...guest, password: e.target.value })} className="field" />
+              <input placeholder="Phone number" type="tel" value={guest.phone} onChange={(e) => setGuest({ ...guest, phone: e.target.value })} className="field" />
             </div>
           )}
           <label className="mb-4 block text-sm">

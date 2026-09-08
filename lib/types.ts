@@ -20,6 +20,7 @@ export interface Service {
   price: number | string;
   bufferMinutes: number;
   category: string | null;
+  priceRange?: string;
 }
 
 export interface StaffMember {
@@ -28,7 +29,7 @@ export interface StaffMember {
   title: string | null;
   specialties: string[];
   user: { firstName: string; lastName: string; avatarUrl: string | null };
-  services?: { service: { id: string; name: string } }[];
+  services?: { customPrice?: number | string | null; service: { id: string; name: string } }[];
 }
 
 export interface TimeSlot {

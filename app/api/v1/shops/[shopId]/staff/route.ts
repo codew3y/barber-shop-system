@@ -10,7 +10,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ sho
     where: { shopId, isActive: true, deletedAt: null },
     include: {
       user: { select: { firstName: true, lastName: true, avatarUrl: true } },
-      services: { include: { service: { select: { id: true, name: true } } } },
+      services: {
+        select: {
+          customPrice: true,
+          service: { select: { id: true, name: true } },
+        },
+      },
     },
   });
   return NextResponse.json({ staff });
