@@ -67,6 +67,7 @@
 | 2026-09-08 | Pushed full local batch to GitHub. Started Phase 4 (staff/admin dashboards). |
 | 2026-09-08 | Completed Phase 4 (M3): staff API (schedule/status/time-off/earnings) + /staff UI, admin API (staff/service CRUD, bookings, analytics, settings, shop-wide time-off) + /admin UI, 15s polling for live updates (WebSocket deferred to later). Live-verified all flows; lint 0 errors, build + e2e green. |
 | 2026-09-08 | Completed Phase 5 (M4): Stripe intents (deposit/full, 20% default) + signature-verified webhooks + admin refunds; 24h/1h reminders with dedupe + shop opt-out; jobs runner (holds, reminders, no-show + fee, `npm run jobs` + keyed HTTP trigger); ICS download + confirmation link. Live-verified with timed fixtures; 15/15 tests, build + e2e green. Needs Stripe/SMTP keys for live money + delivery. |
+| 2026-09-08 | Booking flow redesign: combined Barber & Service step (preselect only via ?staff=), icon step indicators, Continue buttons per step, date-first time picker, service price ranges (₱300–₱350), per-barber price in review, staff filtered by service. E2E green, screenshot-verified. |
 
 ## Quickstart (fresh machine / resume)
 
