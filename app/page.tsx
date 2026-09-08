@@ -122,7 +122,11 @@ export default async function Home() {
                 {s.durationMinutes} min{s.category ? ` · ${s.category}` : ''}
               </p>
               {s.staff.length > 0 && (
-                <ul className="mt-3 grid gap-1 border-t border-cream/10 pt-3">
+                <div className="mt-3 border-t border-cream/10 pt-3">
+                  <p className="mb-1 text-xs font-semibold tracking-widest text-copper-200">
+                    PRICING PER BARBER
+                  </p>
+                  <ul className="grid gap-1">
                   {s.staff.map((ss) => (
                     <li key={ss.staff.id} className="flex justify-between text-sm">
                       <span className="text-cream/70">
@@ -133,7 +137,8 @@ export default async function Home() {
                       </span>
                     </li>
                   ))}
-                </ul>
+                  </ul>
+                </div>
               )}
             </li>
           ))}
