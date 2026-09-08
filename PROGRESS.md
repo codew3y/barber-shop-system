@@ -60,6 +60,7 @@
 | 2026-09-07 | Palette swap per feedback: charcoal + crimson (brown/copper gone). Screenshot-verified. |
 | 2026-09-07 | Modern type per feedback: Space Grotesk display + Geist body (serif/Arial gone). Screenshot-verified. |
 | 2026-09-07 | Removed lower-left "N" watermark (Next.js dev indicator) via devIndicators:false. Verified gone. |
+| 2026-09-07 | Per-barber booking: cards show title + original bio summary + "Book with {name}" deep-linking to flow with barber preselected (?staff=). PHP currency end-to-end (₱, payment default). System-sans extrabold type. E2E green. |
 
 ## Quickstart (fresh machine / resume)
 

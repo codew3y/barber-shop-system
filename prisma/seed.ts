@@ -80,8 +80,8 @@ async function main() {
     data: {
       userId: barberUser.id,
       shopId: shop.id,
-      bio: 'House barber, precision fades',
-      specialties: ['Classic cut', 'Skin fade'],
+      bio: 'Clean fades, classic scissor work, and honest advice on what suits the way you wear it.',
+      specialties: ['Skin Fade', 'Classic cut'],
     },
   });
 
