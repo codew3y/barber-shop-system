@@ -120,16 +120,19 @@ export default async function Home() {
               <p className="font-medium">
                 {s.user.firstName} {s.user.lastName}
               </p>
-              {s.bio && <p className="mt-1 text-sm text-cream/60">{s.bio}</p>}
+              <p className="mt-0.5 text-xs font-semibold tracking-widest text-copper-200">
+                {(s.specialties[0] ?? 'House Barber').toUpperCase()}
+              </p>
+              {s.bio && <p className="mx-auto mt-2 max-w-xs text-sm text-cream/60">{s.bio}</p>}
+              <Link
+                href={`/booking/${shop.id}?staff=${s.id}`}
+                className="mt-4 inline-block rounded bg-copper-600 px-5 py-2 text-sm font-medium text-cream hover:bg-copper-700"
+              >
+                Book with {s.user.firstName}
+              </Link>
             </li>
           ))}
         </ul>
-        <Link
-          href={`/booking/${shop.id}`}
-          className="mt-6 inline-block rounded bg-copper-600 px-7 py-3 font-medium text-cream hover:bg-copper-700"
-        >
-          Book with the house
-        </Link>
       </section>
 
       {/* Visit */}
