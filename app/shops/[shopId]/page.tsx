@@ -1,14 +1,18 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
-import { peso } from '@/lib/format';
+import { priceRange } from '@/lib/format';
 
 export default async function ShopPage({ params }: { params: Promise<{ shopId: string }> }) {
   const { shopId } = await params;
   const shop = await prisma.shop.findFirst({
     where: { id: shopId, deletedAt: null, isActive: true },
     include: {
-      services: { where: { isActive: true, deletedAt: null }, orderBy: { price: 'asc' } },
+      services: {
+        where: { isActive: true, deletedAt: null },
+        orderBy: { price: 'asc' },
+        include: { staff: { select: { customPrice: true } } },
+      },
       staff: {
         where: { isActive: true, deletedAt: null },
         include: { user: { select: { firstName: true, lastName: true } } },
@@ -42,7 +46,9 @@ export default async function ShopPage({ params }: { params: Promise<{ shopId: s
               <li key={s.id} className="rounded-xl border border-cream/10 bg-pine-900 px-4 py-3">
                 <div className="flex justify-between font-medium">
                   <span>{s.name}</span>
-                  <span className="text-copper-200">{peso(s.price)}</span>
+                  <span className="text-copper-200">
+                    {priceRange(Number(s.price), s.staff.map((x) => (x.customPrice ? Number(x.customPrice) : null)))}
+                  </span>
                 </div>
                 <p className="text-sm text-cream/60">
                   {s.durationMinutes} min{s.category ? ` · ${s.category}` : ''}

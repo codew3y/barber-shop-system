@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
-import { peso } from '@/lib/format';
+import { depositFor, peso, priceRange } from '@/lib/format';
 
 const features = [
   {
@@ -113,7 +113,9 @@ export default async function Home() {
             <li key={s.id} className="rounded-2xl border border-cream/10 bg-pine-900 p-5">
               <div className="flex items-baseline justify-between gap-2">
                 <span className="font-display text-xl">{s.name}</span>
-                <span className="text-copper-200">{peso(s.price)}</span>
+                <span className="text-copper-200">
+                  {priceRange(Number(s.price), s.staff.map((x) => (x.customPrice ? Number(x.customPrice) : null)))}
+                </span>
               </div>
               {s.description && (
                 <p className="mt-1 line-clamp-1 text-sm text-cream/60">{s.description}</p>
@@ -127,16 +129,22 @@ export default async function Home() {
                     PRICING PER BARBER
                   </p>
                   <ul className="grid gap-1">
-                  {s.staff.map((ss) => (
-                    <li key={ss.staff.id} className="flex justify-between text-sm">
-                      <span className="text-cream/70">
-                        {ss.staff.user.firstName} {ss.staff.user.lastName}
-                      </span>
-                      <span className="font-medium">
-                        {peso(ss.customPrice ?? s.price)}
-                      </span>
-                    </li>
-                  ))}
+                  {s.staff.map((ss) => {
+                    const price = ss.customPrice ?? s.price;
+                    return (
+                      <li key={ss.staff.id} className="flex justify-between gap-2 text-sm">
+                        <span className="text-cream/70">
+                          {ss.staff.user.firstName} {ss.staff.user.lastName}
+                        </span>
+                        <span className="text-right font-medium">
+                          {peso(price)}
+                          <span className="block text-xs font-normal text-cream/50">
+                            {peso(depositFor(Number(price)))} downpayment
+                          </span>
+                        </span>
+                      </li>
+                    );
+                  })}
                   </ul>
                 </div>
               )}

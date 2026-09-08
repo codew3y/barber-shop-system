@@ -3,7 +3,8 @@
 import { create } from 'zustand';
 import type { Service, StaffMember, TimeSlot } from '@/lib/types';
 
-export type BookingStep = 'service' | 'staff' | 'slot' | 'checkout';
+// 'service' covers the combined Barber & Service step.
+export type BookingStep = 'service' | 'slot' | 'checkout';
 
 interface BookingState {
   shopId: string | null;
@@ -14,6 +15,7 @@ interface BookingState {
   start: (shopId: string, staff?: StaffMember | null) => void;
   setService: (s: Service) => void;
   setStaff: (s: StaffMember) => void;
+  clearStaff: () => void;
   setSlot: (s: TimeSlot) => void;
   setStep: (step: BookingStep) => void;
   reset: () => void;
@@ -30,9 +32,10 @@ const initial = {
 export const useBookingStore = create<BookingState>()((set) => ({
   ...initial,
   start: (shopId, staff) => set({ ...initial, shopId, staff: staff ?? null }),
-  setService: (service) => set({ service, slot: null, step: 'staff' }),
-  setStaff: (staff) => set({ staff, slot: null, step: 'slot' }),
-  setSlot: (slot) => set({ slot, step: 'checkout' }),
+  setService: (service) => set({ service, slot: null }),
+  setStaff: (staff) => set({ staff, slot: null }),
+  clearStaff: () => set({ staff: null, slot: null }),
+  setSlot: (slot) => set({ slot }),
   setStep: (step) => set({ step }),
   reset: () => set(initial),
 }));
