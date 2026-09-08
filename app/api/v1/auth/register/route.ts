@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { generateTokens } from '@/lib/auth';
 import { hashPassword } from '@/lib/password';
 import { publicUser, jsonError } from '@/lib/api';
+import { cleanText } from '@/lib/sanitize';
 import { rateLimit } from '@/lib/rate-limit';
 import { registerSchema } from '@/schemas/auth';
 
@@ -29,7 +30,14 @@ export async function POST(req: NextRequest) {
 
   const passwordHash = await hashPassword(password);
   const user = await prisma.user.create({
-    data: { email, passwordHash, firstName, lastName, phone, role: 'customer' },
+    data: {
+      email,
+      passwordHash,
+      firstName: cleanText(firstName, 100),
+      lastName: cleanText(lastName, 100),
+      phone,
+      role: 'customer',
+    },
   });
   const tokens = generateTokens(user.id);
   return NextResponse.json(

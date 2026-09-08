@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireRole, jsonError } from '@/lib/api';
 import { isShopAdmin } from '@/lib/staff-scope';
+import { cleanOptional, cleanText } from '@/lib/sanitize';
 import { updateStaffSchema } from '@/schemas/staff';
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ staffId: string }> }) {
@@ -26,7 +27,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ staf
     return jsonError('Insufficient permissions', 403);
   }
 
-  const staff = await prisma.staff.update({ where: { id: staffId }, data: parsed.data });
+  const staff = await prisma.staff.update({
+    where: { id: staffId },
+    data: {
+      ...parsed.data,
+      ...(parsed.data.bio !== undefined ? { bio: cleanOptional(parsed.data.bio, 2000) } : {}),
+      ...(parsed.data.title ? { title: cleanText(parsed.data.title, 100) } : {}),
+    },
+  });
   return NextResponse.json({ staff });
 }
 

@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { requireRole, jsonError } from '@/lib/api';
 import { isShopAdmin } from '@/lib/staff-scope';
+import { cleanOptional, cleanText } from '@/lib/sanitize';
 
 const settingsSchema = z.object({
   shopId: z.string().uuid(),
@@ -39,9 +40,11 @@ export async function PUT(req: NextRequest) {
     where: { id: parsed.data.shopId },
     data: {
       settingsJson: merged,
-      ...(parsed.data.name ? { name: parsed.data.name } : {}),
+      ...(parsed.data.name ? { name: cleanText(parsed.data.name, 255) } : {}),
       ...(parsed.data.phone ? { phone: parsed.data.phone } : {}),
-      ...(parsed.data.description !== undefined ? { description: parsed.data.description } : {}),
+      ...(parsed.data.description !== undefined
+        ? { description: cleanOptional(parsed.data.description, 2000) }
+        : {}),
     },
   });
   return NextResponse.json({ shop: updated });
