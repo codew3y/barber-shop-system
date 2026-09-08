@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useBookingStore } from '@/stores/bookingStore';
 import { useAuthStore } from '@/stores/authStore';
 import { apiJson } from '@/lib/api-client';
-import type { Booking } from '@/lib/types';
+import { peso } from '@/lib/format';
+import type { Booking, StaffMember } from '@/lib/types';
 import { ServiceSelector } from './ServiceSelector';
 import { StaffPicker } from './StaffPicker';
 import { SlotPicker } from './SlotPicker';
@@ -14,7 +15,7 @@ const steps = ['service', 'barber', 'time', 'review'] as const;
 const stepFor = (s: string) =>
   s === 'service' ? 0 : s === 'staff' ? 1 : s === 'slot' ? 2 : 3;
 
-export function CheckoutFlow({ shopId, shopName }: { shopId: string; shopName: string }) {
+export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: string; shopName: string; initialStaffId?: string }) {
   const router = useRouter();
   const { service, staff, slot, step, start, setService, setStaff, setSlot, setStep, reset } =
     useBookingStore();
@@ -25,9 +26,26 @@ export function CheckoutFlow({ shopId, shopName }: { shopId: string; shopName: s
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    start(shopId);
-    return () => reset();
-  }, [shopId, start, reset]);
+    let cancelled = false;
+    async function init() {
+      if (initialStaffId) {
+        try {
+          const data = await apiJson<{ staff: StaffMember[] }>(`/api/v1/shops/${shopId}/staff`);
+          const match = data.staff.find((s) => s.id === initialStaffId) ?? null;
+          if (!cancelled) start(shopId, match);
+          return;
+        } catch {
+          // fall through to plain start
+        }
+      }
+      if (!cancelled) start(shopId);
+    }
+    void init();
+    return () => {
+      cancelled = true;
+      reset();
+    };
+  }, [shopId, initialStaffId, start, reset]);
 
   async function ensureAccount(): Promise<boolean> {
     if (user) return true;
@@ -130,7 +148,7 @@ export function CheckoutFlow({ shopId, shopName }: { shopId: string; shopName: s
         <div className="card">
           <h2 className="font-display mb-2 text-xl">The ticket</h2>
           <dl className="mb-4 grid gap-1 text-sm">
-            <div className="flex justify-between"><dt className="text-cream/60">Cut</dt><dd className="font-medium">{service.name} — ${Number(service.price).toFixed(2)}</dd></div>
+            <div className="flex justify-between"><dt className="text-cream/60">Cut</dt><dd className="font-medium">{service.name} — {peso(service.price)}</dd></div>
             <div className="flex justify-between"><dt className="text-cream/60">Barber</dt><dd className="font-medium">{staff.user.firstName} {staff.user.lastName}</dd></div>
             <div className="flex justify-between"><dt className="text-cream/60">Chair time</dt><dd className="font-medium">{new Date(slot.startTime).toLocaleString()}</dd></div>
           </dl>

@@ -11,7 +11,7 @@ interface BookingState {
   staff: StaffMember | null;
   slot: TimeSlot | null;
   step: BookingStep;
-  start: (shopId: string) => void;
+  start: (shopId: string, staff?: StaffMember | null) => void;
   setService: (s: Service) => void;
   setStaff: (s: StaffMember) => void;
   setSlot: (s: TimeSlot) => void;
@@ -29,8 +29,8 @@ const initial = {
 
 export const useBookingStore = create<BookingState>()((set) => ({
   ...initial,
-  start: (shopId) => set({ ...initial, shopId }),
-  setService: (service) => set({ service, staff: null, slot: null, step: 'staff' }),
+  start: (shopId, staff) => set({ ...initial, shopId, staff: staff ?? null }),
+  setService: (service) => set({ service, slot: null, step: 'staff' }),
   setStaff: (staff) => set({ staff, slot: null, step: 'slot' }),
   setSlot: (slot) => set({ slot, step: 'checkout' }),
   setStep: (step) => set({ step }),

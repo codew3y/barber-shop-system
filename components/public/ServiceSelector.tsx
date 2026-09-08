@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { apiJson } from '@/lib/api-client';
+import { peso } from '@/lib/format';
 import type { Service } from '@/lib/types';
 
 export function ServiceSelector({
@@ -29,7 +30,7 @@ export function ServiceSelector({
         >
           <div className="flex items-center justify-between">
             <span className="font-medium">{s.name}</span>
-            <span>${Number(s.price).toFixed(2)}</span>
+            <span>{peso(s.price)}</span>
           </div>
           <p className="text-sm text-cream/60">
             {s.durationMinutes} min{s.category ? ` · ${s.category}` : ''}
