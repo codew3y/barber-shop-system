@@ -14,6 +14,7 @@
 | M2 — Auth & Core Booking MVP | ✅ Done | 3.1–3.6 ✅, e2e green |
 | M3 — Staff/Admin Dashboard | ✅ Done | 4.1 ✅, 4.2 ✅, 4.3 via 15s polling (WebSocket deferred, push optional) |
 | M4 — Payments & Notifications | ✅ Done | 5.1 ✅ (Stripe code live, needs keys), 5.2 ✅ (prefs deferred), 5.3 ✅ (ICS export; Google sync deferred) |
+| M5 — Security Hardening & QA | ✅ Done | 6.1–6.3 ✅, `docs/SECURITY.md` (CSRF N/A documented, Redis limits + audit fix flagged for launch) |
 | M3 — Staff/Admin Dashboard | ⬜ | Phase 4 |
 | M4 — Payments & Notifications | ⬜ | Phase 5 |
 | M5 — Security Hardening & QA | ⬜ | Phase 6 |
@@ -68,8 +69,9 @@
 | 2026-09-08 | Completed Phase 4 (M3): staff API (schedule/status/time-off/earnings) + /staff UI, admin API (staff/service CRUD, bookings, analytics, settings, shop-wide time-off) + /admin UI, 15s polling for live updates (WebSocket deferred to later). Live-verified all flows; lint 0 errors, build + e2e green. |
 | 2026-09-08 | Completed Phase 5 (M4): Stripe intents (deposit/full, 20% default) + signature-verified webhooks + admin refunds; 24h/1h reminders with dedupe + shop opt-out; jobs runner (holds, reminders, no-show + fee, `npm run jobs` + keyed HTTP trigger); ICS download + confirmation link. Live-verified with timed fixtures; 15/15 tests, build + e2e green. Needs Stripe/SMTP keys for live money + delivery. |
 | 2026-09-08 | Booking flow redesign: combined Barber & Service step (preselect only via ?staff=), icon step indicators, Continue buttons per step, date-first time picker, service price ranges (₱300–₱350), per-barber price in review, staff filtered by service. E2E green, screenshot-verified. |
-| 2026-09-08 | Flow compaction: single Barber|Service panel (cross-outs both directions), side-by-side date|time panel with unavailable labels, tighter spacing — fits above the fold. E2E green, screenshot-verified. |
+| 2026-09-08 | Flow compaction: single Barber\|Service panel (cross-outs both directions), side-by-side date\|time panel with unavailable labels, tighter spacing — fits above the fold. E2E green, screenshot-verified. |
 | 2026-09-08 | Fixed 12am-slot bug: slot engine now works in shop timezone (Intl-based, no deps); house moved to Asia/Manila + Quezon City address; SlotPicker formats in shop tz; API returns tz. 19/19 tests, e2e green. |
+| 2026-09-08 | Completed Phase 6 (M5): security headers, free-text sanitization, wider rate limits; 11/11 RBAC/IDOR matrix; 8-way race proves no double-booking; axe clean; `docs/SECURITY.md`. Lint 0 errors, build + e2e green. |
 
 ## Quickstart (fresh machine / resume)
 
