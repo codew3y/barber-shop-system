@@ -36,9 +36,10 @@
       `GET /bookings/mine`, `GET /bookings/:id`, cancel + reschedule with audit log
       and owner/staff/admin permission checks. Live-tested full lifecycle; 12/12 tests.
       `prisma/seed.ts` demo shop (`npm run db:seed`).
-- [x] **3.5 Customer UI** — home ShopBrowser, shop detail, 4-step CheckoutFlow
-      (service → staff → slot → checkout with inline guest registration), login/register
-      pages, Zustand auth/booking stores, React Query + token-refresh api client.
+- [x] **3.5 Customer UI** — single-brand BarberHouse landing (hero, menu, barbers, visit),
+      4-step CheckoutFlow (service → staff → slot → checkout with inline guest registration),
+      login/register pages, Zustand auth/booking stores, React Query + token-refresh api client.
+      (Multi-shop catalog dropped by scope decision — brand-specific project.)
 - [x] **3.6 Confirmations** — confirmation page (booking + notification states),
       dashboard (upcoming/history + cancel), notification rows queued on
       create/cancel/reschedule. SendGrid/Twilio send paths implemented; without keys
@@ -54,6 +55,7 @@
 | 2026-09-07 | Completed 3.5 + 3.6 (UI flow, guest checkout, notifications, confirmation, dashboard). Playwright e2e guest booking green; fixed params-unwrap warning. M2 COMPLETE — Phase 3 done. Next: Phase 4 staff/admin dashboards. |
 | 2026-09-07 | UI restyle inspired by gentlemensquarter layout (badge hero, dual CTA, feature trio, catalog) with own theme: cream/pine-green/copper + serif display ("The Grooming Ledger"). Build + e2e green, screenshot-verified. |
 | 2026-09-07 | Renamed brand to BarberHouse (nav, footer, metadata, package name). Initialized git, first push to github.com/codew3y/barber-shop-system. |
+| 2026-09-07 | Scope pivot: single-brand project, removed multi-shop catalog (deleted ShopBrowser, home is now BarberHouse landing with menu/barbers/visit). Reseeded BarberHouse shop. Build + e2e green. |
 
 ## Quickstart (fresh machine / resume)
 

@@ -31,7 +31,7 @@ export function StaffPicker({
             {s.user.firstName} {s.user.lastName}
           </span>
           {s.specialties.length > 0 && (
-            <p className="text-sm text-zinc-500">{s.specialties.join(', ')}</p>
+            <p className="text-sm text-cream/60">{s.specialties.join(', ')}</p>
           )}
         </button>
       ))}

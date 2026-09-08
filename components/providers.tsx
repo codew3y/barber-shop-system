@@ -24,19 +24,25 @@ function Nav() {
   }, [hydrate]);
 
   return (
-    <header className="sticky top-0 z-10 border-b border-espresso/10 bg-cream/95 backdrop-blur">
+    <header className="sticky top-0 z-10 border-b border-cream/10 bg-pine-950/95 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
         <BrandMark />
         <nav className="flex items-center gap-3 text-sm sm:gap-5">
-          <Link href="/" className="hidden hover:underline sm:inline">
-            Shops
+          <Link href="/#services" className="hidden hover:underline sm:inline">
+            Services
+          </Link>
+          <Link href="/#barbers" className="hidden hover:underline sm:inline">
+            Barbers
+          </Link>
+          <Link href="/#visit" className="hidden hover:underline sm:inline">
+            Visit
           </Link>
           {ready && user ? (
             <>
               <Link href="/dashboard" className="hover:underline">
                 My bookings
               </Link>
-              <span className="hidden text-bark sm:inline">
+              <span className="hidden text-cream/60 sm:inline">
                 {user.firstName} · {user.role}
               </span>
               <button
@@ -44,7 +50,7 @@ function Nav() {
                   clear();
                   window.location.href = '/';
                 }}
-                className="rounded-full border border-espresso/20 px-3 py-1.5 hover:bg-parchment"
+                className="rounded-full border border-cream/25 px-3 py-1.5 hover:bg-cream/10"
               >
                 Logout
               </button>
@@ -53,7 +59,7 @@ function Nav() {
             <>
               <Link
                 href="/login"
-                className="rounded-full border border-espresso/20 px-3 py-1.5 hover:bg-parchment"
+                className="rounded-full border border-cream/25 px-3 py-1.5 hover:bg-cream/10"
               >
                 Sign in
               </Link>
@@ -73,7 +79,7 @@ function Nav() {
 
 function Footer() {
   return (
-    <footer className="mt-12 bg-pine-950 text-cream/80">
+    <footer className="mt-12 border-t border-cream/10 bg-black/30 text-cream/80">
       <div className="mx-auto grid max-w-5xl gap-8 px-4 py-10 text-sm sm:grid-cols-3">
         <div>
           <p className="font-display text-lg text-cream">BarberHouse</p>
@@ -89,9 +95,9 @@ function Footer() {
         <div>
           <p className="mb-2 font-semibold tracking-widest text-copper-200">EXPLORE</p>
           <p className="flex flex-col gap-1">
-            <Link href="/" className="hover:underline">Shop catalog</Link>
+            <Link href="/#services" className="hover:underline">Services</Link>
+            <Link href="/#barbers" className="hover:underline">Barbers</Link>
             <Link href="/dashboard" className="hover:underline">My bookings</Link>
-            <Link href="/register" className="hover:underline">Create account</Link>
           </p>
         </div>
       </div>

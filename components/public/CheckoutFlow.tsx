@@ -81,7 +81,7 @@ export function CheckoutFlow({ shopId, shopName }: { shopId: string; shopName: s
 
   return (
     <div>
-      <p className="text-xs font-semibold tracking-widest text-copper-700">BOOKING — {shopName.toUpperCase()}</p>
+      <p className="text-xs font-semibold tracking-widest text-copper-200">BOOKING — {shopName.toUpperCase()}</p>
       <h1 className="font-display mb-5 text-3xl">Take a chair in four steps</h1>
 
       <ol className="mb-6 flex flex-wrap gap-2 text-sm">
@@ -92,8 +92,8 @@ export function CheckoutFlow({ shopId, shopName }: { shopId: string; shopName: s
               stepFor(step) === i
                 ? 'bg-pine-900 font-medium text-cream'
                 : stepFor(step) > i
-                  ? 'bg-pine-100 text-pine-800'
-                  : 'bg-espresso/5 text-bark'
+                  ? 'bg-copper-600/15 text-copper-200'
+                  : 'bg-cream/5 text-cream/60'
             }`}
           >
             {i + 1}. {label}
@@ -106,7 +106,7 @@ export function CheckoutFlow({ shopId, shopName }: { shopId: string; shopName: s
       )}
       {step === 'staff' && service && (
         <>
-          <button onClick={() => go('service')} className="mb-3 text-sm text-copper-700 underline">
+          <button onClick={() => go('service')} className="mb-3 text-sm text-copper-200 underline">
             ← Swap service ({service.name})
           </button>
           <StaffPicker shopId={shopId} selected={staff} onSelect={setStaff} />
@@ -114,7 +114,7 @@ export function CheckoutFlow({ shopId, shopName }: { shopId: string; shopName: s
       )}
       {step === 'slot' && service && staff && (
         <>
-          <button onClick={() => go('staff')} className="mb-3 text-sm text-copper-700 underline">
+          <button onClick={() => go('staff')} className="mb-3 text-sm text-copper-200 underline">
             ← Swap barber ({staff.user.firstName})
           </button>
           <SlotPicker
@@ -130,13 +130,13 @@ export function CheckoutFlow({ shopId, shopName }: { shopId: string; shopName: s
         <div className="card">
           <h2 className="font-display mb-2 text-xl">The ticket</h2>
           <dl className="mb-4 grid gap-1 text-sm">
-            <div className="flex justify-between"><dt className="text-bark">Cut</dt><dd className="font-medium">{service.name} — ${Number(service.price).toFixed(2)}</dd></div>
-            <div className="flex justify-between"><dt className="text-bark">Barber</dt><dd className="font-medium">{staff.user.firstName} {staff.user.lastName}</dd></div>
-            <div className="flex justify-between"><dt className="text-bark">Chair time</dt><dd className="font-medium">{new Date(slot.startTime).toLocaleString()}</dd></div>
+            <div className="flex justify-between"><dt className="text-cream/60">Cut</dt><dd className="font-medium">{service.name} — ${Number(service.price).toFixed(2)}</dd></div>
+            <div className="flex justify-between"><dt className="text-cream/60">Barber</dt><dd className="font-medium">{staff.user.firstName} {staff.user.lastName}</dd></div>
+            <div className="flex justify-between"><dt className="text-cream/60">Chair time</dt><dd className="font-medium">{new Date(slot.startTime).toLocaleString()}</dd></div>
           </dl>
           {!user && (
             <div className="mb-4 grid gap-2">
-              <p className="text-sm text-bark">Checking out as a guest — we&apos;ll open your account:</p>
+              <p className="text-sm text-cream/60">Checking out as a guest — we&apos;ll open your account:</p>
               <div className="grid grid-cols-2 gap-2">
                 <input placeholder="First name" value={guest.firstName} onChange={(e) => setGuest({ ...guest, firstName: e.target.value })} className="field" />
                 <input placeholder="Last name" value={guest.lastName} onChange={(e) => setGuest({ ...guest, lastName: e.target.value })} className="field" />
@@ -146,10 +146,10 @@ export function CheckoutFlow({ shopId, shopName }: { shopId: string; shopName: s
             </div>
           )}
           <label className="mb-4 block text-sm">
-            <span className="text-bark">Notes for the barber (optional)</span>
+            <span className="text-cream/60">Notes for the barber (optional)</span>
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="field mt-1 block w-full" />
           </label>
-          {error && <p className="mb-3 text-sm text-red-700">{error}</p>}
+          {error && <p className="mb-3 text-sm text-red-300">{error}</p>}
           <div className="flex gap-2">
             <button onClick={() => go('slot')} className="btn-ghost">
               ← Back

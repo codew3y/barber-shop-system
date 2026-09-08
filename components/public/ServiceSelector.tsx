@@ -31,7 +31,7 @@ export function ServiceSelector({
             <span className="font-medium">{s.name}</span>
             <span>${Number(s.price).toFixed(2)}</span>
           </div>
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-cream/60">
             {s.durationMinutes} min{s.category ? ` · ${s.category}` : ''}
           </p>
         </button>

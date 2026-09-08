@@ -3,33 +3,60 @@ import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
-// Demo data for local dev/testing of the booking flow (Phase 3.4).
-// Idempotent: safe to re-run.
+// Demo data for local dev/testing (single-brand: BarberHouse).
+// Clears the previous demo graph first, then recreates it. Safe to re-run
+// on a dev database (fails if real customer bookings reference demo rows).
 async function main() {
   const passwordHash = await bcrypt.hash('password123', 12);
 
-  const owner = await prisma.user.upsert({
-    where: { email: 'owner@demo.shop' },
-    update: {},
-    create: {
+  // Clear previous demo graph (FK-safe order)
+  const demoUsers = await prisma.user.findMany({
+    where: { email: { in: ['owner@demo.shop', 'barber@demo.shop'] } },
+    select: { id: true },
+  });
+  const demoIds = demoUsers.map((u) => u.id);
+  if (demoIds.length > 0) {
+    const demoShops = await prisma.shop.findMany({
+      where: { ownerId: { in: demoIds } },
+      select: { id: true },
+    });
+    const shopIds = demoShops.map((s) => s.id);
+    if (shopIds.length > 0) {
+      await prisma.notification.deleteMany({ where: { bookingId: { in: (await prisma.booking.findMany({ where: { shopId: { in: shopIds } }, select: { id: true } })).map((b) => b.id) } } });
+      await prisma.review.deleteMany({ where: { shopId: { in: shopIds } } });
+      await prisma.booking.deleteMany({ where: { shopId: { in: shopIds } } });
+      await prisma.auditLog.deleteMany({ where: { actorId: { in: demoIds } } });
+      const staffIds = (await prisma.staff.findMany({ where: { shopId: { in: shopIds } }, select: { id: true } })).map((s) => s.id);
+      if (staffIds.length > 0) {
+        await prisma.staffService.deleteMany({ where: { staffId: { in: staffIds } } });
+        await prisma.availability.deleteMany({ where: { staffId: { in: staffIds } } });
+        await prisma.timeOff.deleteMany({ where: { staffId: { in: staffIds } } });
+        await prisma.staff.deleteMany({ where: { id: { in: staffIds } } });
+      }
+      await prisma.service.deleteMany({ where: { shopId: { in: shopIds } } });
+      await prisma.shop.deleteMany({ where: { id: { in: shopIds } } });
+    }
+    await prisma.user.deleteMany({ where: { id: { in: demoIds } } });
+  }
+
+  const owner = await prisma.user.create({
+    data: {
       email: 'owner@demo.shop',
       passwordHash,
-      firstName: 'Demo',
+      firstName: 'House',
       lastName: 'Owner',
       role: 'admin',
       emailVerified: true,
     },
   });
 
-  const shop = await prisma.shop.upsert({
-    where: { slug: 'demo-barbershop' },
-    update: {},
-    create: {
+  const shop = await prisma.shop.create({
+    data: {
       ownerId: owner.id,
-      name: 'Demo Barbershop',
-      slug: 'demo-barbershop',
-      description: 'Seeded demo shop for local development',
-      addressLine1: '123 Main St',
+      name: 'BarberHouse',
+      slug: 'barberhouse',
+      description: 'The neighborhood booking house for classic cuts, sharp fades, and unhurried straight-razor shaves.',
+      addressLine1: '123 Grooming Blvd',
       city: 'Springfield',
       state: 'IL',
       postalCode: '62701',
@@ -38,63 +65,44 @@ async function main() {
     },
   });
 
-  const barberUser = await prisma.user.upsert({
-    where: { email: 'barber@demo.shop' },
-    update: {},
-    create: {
+  const barberUser = await prisma.user.create({
+    data: {
       email: 'barber@demo.shop',
       passwordHash,
-      firstName: 'Demo',
-      lastName: 'Barber',
+      firstName: 'Alex',
+      lastName: 'Reyes',
       role: 'staff',
       emailVerified: true,
     },
   });
 
-  const staff = await prisma.staff.upsert({
-    where: { userId_shopId: { userId: barberUser.id, shopId: shop.id } },
-    update: { isActive: true },
-    create: {
+  const staff = await prisma.staff.create({
+    data: {
       userId: barberUser.id,
       shopId: shop.id,
-      bio: 'Seeded demo barber',
-      specialties: ['Classic cut'],
+      bio: 'House barber, precision fades',
+      specialties: ['Classic cut', 'Skin fade'],
     },
   });
 
-  let service = await prisma.service.findFirst({ where: { shopId: shop.id, name: 'Classic Cut' } });
-  if (!service) {
-    service = await prisma.service.create({
-      data: {
-        shopId: shop.id,
-        name: 'Classic Cut',
-        description: 'Seeded demo service',
-        durationMinutes: 30,
-        price: 25.0,
-        bufferMinutes: 5,
-        category: 'Haircut',
-      },
-    });
-  }
-
-  await prisma.staffService.upsert({
-    where: { staffId_serviceId: { staffId: staff.id, serviceId: service.id } },
-    update: {},
-    create: { staffId: staff.id, serviceId: service.id },
+  const service = await prisma.service.create({
+    data: {
+      shopId: shop.id,
+      name: 'Classic Cut',
+      description: 'Consultation, cut, hot-lather neckline, and style.',
+      durationMinutes: 30,
+      price: 25.0,
+      bufferMinutes: 5,
+      category: 'Haircut',
+    },
   });
+
+  await prisma.staffService.create({ data: { staffId: staff.id, serviceId: service.id } });
 
   // Mon–Fri 09:00–17:00 UTC
   for (let dow = 1; dow <= 5; dow++) {
-    await prisma.availability.upsert({
-      where: {
-        staffId_dayOfWeek_startTime: {
-          staffId: staff.id,
-          dayOfWeek: dow,
-          startTime: new Date('1970-01-01T09:00:00Z'),
-        },
-      },
-      update: { endTime: new Date('1970-01-01T17:00:00Z'), isActive: true },
-      create: {
+    await prisma.availability.create({
+      data: {
         staffId: staff.id,
         dayOfWeek: dow,
         startTime: new Date('1970-01-01T09:00:00Z'),

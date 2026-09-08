@@ -18,7 +18,7 @@ export default async function ShopPage({ params }: { params: Promise<{ shopId: s
 
   return (
     <div>
-      <section className="rounded-3xl bg-pine-900 px-6 py-10 text-cream sm:px-10">
+      <section className="band px-6 py-10 sm:px-10">
         <p className="text-xs font-semibold tracking-widest text-copper-200">THE SHOP</p>
         <h1 className="font-display mt-1 text-4xl">{shop.name}</h1>
         <p className="mt-2 text-cream/70">
@@ -38,12 +38,12 @@ export default async function ShopPage({ params }: { params: Promise<{ shopId: s
           <h2 className="font-display mb-3 text-2xl">Services</h2>
           <ul className="grid gap-2">
             {shop.services.map((s) => (
-              <li key={s.id} className="rounded-xl border border-espresso/10 bg-white/70 px-4 py-3">
+              <li key={s.id} className="rounded-xl border border-cream/10 bg-pine-900 px-4 py-3">
                 <div className="flex justify-between font-medium">
                   <span>{s.name}</span>
-                  <span className="text-pine-800">${Number(s.price).toFixed(2)}</span>
+                  <span className="text-copper-200">${Number(s.price).toFixed(2)}</span>
                 </div>
-                <p className="text-sm text-bark">
+                <p className="text-sm text-cream/60">
                   {s.durationMinutes} min{s.category ? ` · ${s.category}` : ''}
                 </p>
               </li>
@@ -54,8 +54,8 @@ export default async function ShopPage({ params }: { params: Promise<{ shopId: s
           <h2 className="font-display mb-3 text-2xl">Barbers</h2>
           <ul className="grid gap-2">
             {shop.staff.map((s) => (
-              <li key={s.id} className="flex items-center gap-3 rounded-xl border border-espresso/10 bg-white/70 px-4 py-3">
-                <span className="font-display flex h-10 w-10 items-center justify-center rounded-full bg-copper-100 text-copper-700">
+              <li key={s.id} className="flex items-center gap-3 rounded-xl border border-cream/10 bg-pine-900 px-4 py-3">
+                <span className="font-display flex h-10 w-10 items-center justify-center rounded-full bg-copper-600/15 text-copper-200">
                   {s.user.firstName.charAt(0)}
                 </span>
                 <span className="font-medium">
