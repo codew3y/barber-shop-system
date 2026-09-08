@@ -16,15 +16,17 @@ test('guest books end-to-end and tracks in dashboard', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Cuts & services' })).toBeVisible();
   await page.getByRole('link', { name: 'Book your chair' }).first().click();
 
-  // Step 1: service
+  // Step 1: Barber & Service (no preselect on the plain flow)
   await page.getByRole('button', { name: /Classic Cut/ }).click();
-  // Step 2: staff
   await page.getByRole('button', { name: /Alex Reyes/ }).click();
-  // Step 3: slot — set date, pick first available slot
+  await page.getByRole('button', { name: 'Continue' }).click();
+
+  // Step 2: time — set date, pick first available slot, continue
   await page.locator('input[type="date"]').fill(date);
   const slotButton = page.locator('button:not([disabled])', { hasText: /AM|PM/ }).first();
   await expect(slotButton).toBeVisible({ timeout: 15000 });
   await slotButton.click();
+  await page.getByRole('button', { name: 'Continue' }).click();
 
   // Step 4: guest checkout
   await page.getByPlaceholder('First name').fill('E2E');

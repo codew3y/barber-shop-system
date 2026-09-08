@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
-import { peso } from '@/lib/format';
+import { peso, priceRange } from '@/lib/format';
 
 const features = [
   {
@@ -113,7 +113,9 @@ export default async function Home() {
             <li key={s.id} className="rounded-2xl border border-cream/10 bg-pine-900 p-5">
               <div className="flex items-baseline justify-between gap-2">
                 <span className="font-display text-xl">{s.name}</span>
-                <span className="text-copper-200">{peso(s.price)}</span>
+                <span className="text-copper-200">
+                  {priceRange(Number(s.price), s.staff.map((x) => (x.customPrice ? Number(x.customPrice) : null)))}
+                </span>
               </div>
               {s.description && (
                 <p className="mt-1 line-clamp-1 text-sm text-cream/60">{s.description}</p>

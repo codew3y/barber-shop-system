@@ -6,10 +6,12 @@ import type { StaffMember } from '@/lib/types';
 
 export function StaffPicker({
   shopId,
+  serviceId,
   selected,
   onSelect,
 }: {
   shopId: string;
+  serviceId?: string | null;
   selected?: StaffMember | null;
   onSelect: (s: StaffMember) => void;
 }) {
@@ -18,10 +20,15 @@ export function StaffPicker({
     queryFn: () => apiJson<{ staff: StaffMember[] }>(`/api/v1/shops/${shopId}/staff`),
   });
 
+  const list = (data?.staff ?? []).filter(
+    (s) => !serviceId || (s.services ?? []).some((x) => x.service.id === serviceId)
+  );
+
   if (isLoading) return <p>Loading barbers…</p>;
+  if (list.length === 0) return <p className="text-cream/60">No barber offers this service — pick another.</p>;
   return (
     <div className="grid gap-3">
-      {data?.staff.map((s) => (
+      {list.map((s) => (
         <button
           key={s.id}
           onClick={() => onSelect(s)}
