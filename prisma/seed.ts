@@ -64,11 +64,12 @@ async function main() {
       slug: 'barberhouse',
       description: 'The neighborhood booking house for classic cuts, sharp fades, and unhurried straight-razor shaves.',
       addressLine1: '123 Grooming Blvd',
-      city: 'Springfield',
-      state: 'IL',
-      postalCode: '62701',
-      phone: '+1-555-0100',
-      timezone: 'America/Chicago',
+      city: 'Quezon City',
+      state: 'Metro Manila',
+      postalCode: '1100',
+      country: 'PH',
+      phone: '+63-2-8123-4567',
+      timezone: 'Asia/Manila',
     },
   });
 
