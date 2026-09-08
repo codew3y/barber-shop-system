@@ -1,0 +1,359 @@
+// Prisma schema — generated from PHASE-2-ARCHITECTURE.md ERD
+// NOTE: the double-booking exclusion constraint (btree_gist) cannot be
+// expressed in Prisma schema and is added via a raw migration (see
+// prisma/migrations/.../add_booking_exclusion.sql).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  customer
+  staff
+  admin
+  super_admin
+}
+
+enum BookingStatus {
+  pending
+  confirmed
+  cancelled
+  completed
+  no_show
+}
+
+enum PaymentStatus {
+  pending
+  processing
+  completed
+  failed
+  refunded
+  partially_refunded
+}
+
+enum PaymentType {
+  deposit
+  full
+  refund
+  no_show_fee
+}
+
+enum NotificationChannel {
+  email
+  sms
+  push
+}
+
+enum NotificationStatus {
+  pending
+  sent
+  delivered
+  failed
+}
+
+enum TimeOffStatus {
+  pending
+  approved
+  rejected
+}
+
+model User {
+  id            String    @id @default(uuid()) @db.Uuid
+  email         String    @unique
+  phone         String?   @unique
+  passwordHash  String    @map("password_hash")
+  firstName     String    @map("first_name")
+  lastName      String    @map("last_name")
+  role          Role
+  avatarUrl     String?   @map("avatar_url")
+  emailVerified Boolean   @default(false) @map("email_verified")
+  phoneVerified Boolean   @default(false) @map("phone_verified")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz
+
+  ownedShops       Shop[]
+  staffProfiles    Staff[]
+  bookings         Booking[]      @relation("CustomerBookings")
+  cancelledBooking Booking[]      @relation("CancelledBy")
+  approvedTimeOff  TimeOff[]      @relation("ApprovedBy")
+  notifications    Notification[]
+  reviews          Review[]       @relation("CustomerReviews")
+  auditLogs        AuditLog[]     @relation("ActorLogs")
+
+  @@index([email])
+  @@index([phone])
+  @@index([role])
+  @@map("users")
+}
+
+model Shop {
+  id           String    @id @default(uuid()) @db.Uuid
+  ownerId      String    @map("owner_id") @db.Uuid
+  name         String
+  slug         String    @unique
+  description  String?
+  addressLine1 String    @map("address_line1")
+  addressLine2 String?   @map("address_line2")
+  city         String
+  state        String
+  postalCode   String    @map("postal_code")
+  country      String    @default("US") @db.Char(2)
+  phone        String
+  email        String?
+  website      String?
+  timezone     String    @default("America/New_York")
+  settingsJson Json      @default("{}") @map("settings_json")
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz
+
+  owner    User      @relation(fields: [ownerId], references: [id])
+  staff    Staff[]
+  services Service[]
+  bookings Booking[]
+  reviews  Review[]
+
+  @@index([ownerId])
+  @@index([slug])
+  @@index([city, state, country])
+  @@map("shops")
+}
+
+model Staff {
+  id             String    @id @default(uuid()) @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  shopId         String    @map("shop_id") @db.Uuid
+  bio            String?
+  specialties    String[]
+  isActive       Boolean   @default(true) @map("is_active")
+  commissionRate Decimal   @default(0.00) @map("commission_rate") @db.Decimal(5, 2)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz
+
+  user         User            @relation(fields: [userId], references: [id])
+  shop         Shop            @relation(fields: [shopId], references: [id])
+  services     StaffService[]
+  availability Availability[]
+  timeOff      TimeOff[]
+  bookings     Booking[]
+  reviews      Review[]        @relation("StaffReviews")
+
+  @@unique([userId, shopId])
+  @@index([userId])
+  @@index([shopId])
+  @@index([shopId, isActive])
+  @@map("staff")
+}
+
+model Service {
+  id              String    @id @default(uuid()) @db.Uuid
+  shopId          String    @map("shop_id") @db.Uuid
+  name            String
+  description     String?
+  durationMinutes Int       @map("duration_minutes")
+  price           Decimal   @db.Decimal(10, 2)
+  bufferMinutes   Int       @default(5) @map("buffer_minutes")
+  isActive        Boolean   @default(true) @map("is_active")
+  category        String?
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt       DateTime? @map("deleted_at") @db.Timestamptz
+
+  shop     Shop           @relation(fields: [shopId], references: [id])
+  staff    StaffService[]
+  bookings Booking[]
+
+  @@index([shopId])
+  @@index([shopId, isActive])
+  @@index([shopId, category])
+  @@map("services")
+}
+
+model StaffService {
+  staffId               String   @map("staff_id") @db.Uuid
+  serviceId             String   @map("service_id") @db.Uuid
+  customPrice           Decimal? @map("custom_price") @db.Decimal(10, 2)
+  customDurationMinutes Int?     @map("custom_duration_minutes")
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  staff   Staff   @relation(fields: [staffId], references: [id])
+  service Service @relation(fields: [serviceId], references: [id])
+
+  @@id([staffId, serviceId])
+  @@index([staffId])
+  @@index([serviceId])
+  @@map("staff_services")
+}
+
+model Availability {
+  id        String   @id @default(uuid()) @db.Uuid
+  staffId   String   @map("staff_id") @db.Uuid
+  dayOfWeek Int      @map("day_of_week")
+  startTime DateTime @map("start_time") @db.Time
+  endTime   DateTime @map("end_time") @db.Time
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  staff Staff @relation(fields: [staffId], references: [id])
+
+  @@unique([staffId, dayOfWeek, startTime])
+  @@index([staffId])
+  @@index([staffId, dayOfWeek])
+  @@map("availability")
+}
+
+model TimeOff {
+  id         String       @id @default(uuid()) @db.Uuid
+  staffId    String       @map("staff_id") @db.Uuid
+  startAt    DateTime     @map("start_at") @db.Timestamptz
+  endAt      DateTime     @map("end_at") @db.Timestamptz
+  reason     String?
+  status     TimeOffStatus @default(pending)
+  approvedBy String?      @map("approved_by") @db.Uuid
+  createdAt  DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  staff    Staff @relation(fields: [staffId], references: [id])
+  approver User? @relation("ApprovedBy", fields: [approvedBy], references: [id])
+
+  @@index([staffId])
+  @@index([startAt, endAt])
+  @@map("time_off")
+}
+
+model Booking {
+  id                 String        @id @default(uuid()) @db.Uuid
+  customerId         String        @map("customer_id") @db.Uuid
+  staffId            String        @map("staff_id") @db.Uuid
+  serviceId          String        @map("service_id") @db.Uuid
+  shopId             String        @map("shop_id") @db.Uuid
+  startAt            DateTime      @map("start_at") @db.Timestamptz
+  endAt              DateTime      @map("end_at") @db.Timestamptz
+  status             BookingStatus @default(pending)
+  holdExpiresAt      DateTime?     @map("hold_expires_at") @db.Timestamptz
+  cancellationReason String?       @map("cancellation_reason")
+  cancelledBy        String?       @map("cancelled_by") @db.Uuid
+  cancelledAt        DateTime?     @map("cancelled_at") @db.Timestamptz
+  notes              String?
+  createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt          DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  customer    User     @relation("CustomerBookings", fields: [customerId], references: [id])
+  canceller   User?    @relation("CancelledBy", fields: [cancelledBy], references: [id])
+  staff       Staff    @relation(fields: [staffId], references: [id])
+  service     Service  @relation(fields: [serviceId], references: [id])
+  shop        Shop     @relation(fields: [shopId], references: [id])
+  payments    Payment[]
+  notifications Notification[]
+  review      Review?
+
+  @@index([customerId])
+  @@index([staffId])
+  @@index([shopId])
+  @@index([serviceId])
+  @@index([status])
+  @@index([startAt])
+  @@index([endAt])
+  @@map("bookings")
+}
+
+model Payment {
+  id              String        @id @default(uuid()) @db.Uuid
+  bookingId       String        @map("booking_id") @db.Uuid
+  amount          Decimal       @db.Decimal(10, 2)
+  currency        String        @default("USD") @db.Char(3)
+  status          PaymentStatus @default(pending)
+  type            PaymentType
+  provider        String
+  providerRef     String?       @map("provider_ref")
+  providerChargeId String?      @map("provider_charge_id")
+  metadata        Json          @default("{}")
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+
+  @@index([bookingId])
+  @@index([status])
+  @@index([providerRef])
+  @@map("payments")
+}
+
+model Notification {
+  id          String              @id @default(uuid()) @db.Uuid
+  bookingId   String?             @map("booking_id") @db.Uuid
+  userId      String              @map("user_id") @db.Uuid
+  channel     NotificationChannel
+  type        String
+  status      NotificationStatus  @default(pending)
+  subject     String?
+  content     String?
+  metadata    Json                @default("{}")
+  sentAt      DateTime?           @map("sent_at") @db.Timestamptz
+  deliveredAt DateTime?           @map("delivered_at") @db.Timestamptz
+  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz
+
+  booking Booking? @relation(fields: [bookingId], references: [id])
+  user    User     @relation(fields: [userId], references: [id])
+
+  @@index([bookingId])
+  @@index([userId])
+  @@index([status])
+  @@index([type])
+  @@map("notifications")
+}
+
+model Review {
+  id         String   @id @default(uuid()) @db.Uuid
+  bookingId  String   @unique @map("booking_id") @db.Uuid
+  customerId String   @map("customer_id") @db.Uuid
+  staffId    String   @map("staff_id") @db.Uuid
+  shopId     String   @map("shop_id") @db.Uuid
+  rating     Int
+  comment    String?
+  isAnonymous Boolean @default(false) @map("is_anonymous")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  booking  Booking @relation(fields: [bookingId], references: [id])
+  customer User    @relation("CustomerReviews", fields: [customerId], references: [id])
+  staff    Staff   @relation("StaffReviews", fields: [staffId], references: [id])
+  shop     Shop    @relation(fields: [shopId], references: [id])
+
+  @@index([bookingId])
+  @@index([customerId])
+  @@index([staffId])
+  @@index([shopId])
+  @@index([shopId, rating])
+  @@map("reviews")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  actorId   String   @map("actor_id") @db.Uuid
+  action    String
+  entity    String
+  entityId  String   @map("entity_id") @db.Uuid
+  oldValue  Json?    @map("old_value")
+  newValue  Json?    @map("new_value")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  actor User @relation("ActorLogs", fields: [actorId], references: [id])
+
+  @@index([actorId])
+  @@index([entity, entityId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_log")
+}
