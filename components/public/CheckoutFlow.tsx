@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useBookingStore } from '@/stores/bookingStore';
 import { useAuthStore } from '@/stores/authStore';
 import { apiJson } from '@/lib/api-client';
-import { peso } from '@/lib/format';
+import { depositFor, peso } from '@/lib/format';
 import type { Booking, StaffMember } from '@/lib/types';
 import { ArrowRight, CalendarClock, ClipboardCheck, Scissors } from 'lucide-react';
 import { BarberServicePicker } from './BarberServicePicker';
@@ -193,9 +193,11 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
         <div className="card">
           <h2 className="font-display mb-2 text-xl">The ticket</h2>
           <dl className="mb-4 grid gap-1 text-sm">
-            <div className="flex justify-between"><dt className="text-cream/60">Cut</dt><dd className="font-medium">{service.name} — {peso(staff.services?.find((x) => x.service.id === service.id)?.customPrice ?? service.price)}</dd></div>
+            <div className="flex justify-between"><dt className="text-cream/60">Cut</dt><dd className="font-medium">{service.name}</dd></div>
             <div className="flex justify-between"><dt className="text-cream/60">Barber</dt><dd className="font-medium">{staff.user.firstName} {staff.user.lastName}</dd></div>
             <div className="flex justify-between"><dt className="text-cream/60">Chair time</dt><dd className="font-medium">{new Date(slot.startTime).toLocaleString()}</dd></div>
+            <div className="flex justify-between border-t border-cream/10 pt-1"><dt className="text-cream/60">Total</dt><dd className="font-medium">{peso(staff.services?.find((x) => x.service.id === service.id)?.customPrice ?? service.price)}</dd></div>
+            <div className="flex justify-between"><dt className="text-cream/60">Downpayment due</dt><dd className="font-medium text-copper-200">{peso(depositFor(Number(staff.services?.find((x) => x.service.id === service.id)?.customPrice ?? service.price)))}</dd></div>
           </dl>
           {!user && (
             <div className="mb-4 grid gap-2">

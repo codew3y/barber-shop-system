@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
-import { peso, priceRange } from '@/lib/format';
+import { depositFor, peso, priceRange } from '@/lib/format';
 
 const features = [
   {
@@ -129,16 +129,22 @@ export default async function Home() {
                     PRICING PER BARBER
                   </p>
                   <ul className="grid gap-1">
-                  {s.staff.map((ss) => (
-                    <li key={ss.staff.id} className="flex justify-between text-sm">
-                      <span className="text-cream/70">
-                        {ss.staff.user.firstName} {ss.staff.user.lastName}
-                      </span>
-                      <span className="font-medium">
-                        {peso(ss.customPrice ?? s.price)}
-                      </span>
-                    </li>
-                  ))}
+                  {s.staff.map((ss) => {
+                    const price = ss.customPrice ?? s.price;
+                    return (
+                      <li key={ss.staff.id} className="flex justify-between gap-2 text-sm">
+                        <span className="text-cream/70">
+                          {ss.staff.user.firstName} {ss.staff.user.lastName}
+                        </span>
+                        <span className="text-right font-medium">
+                          {peso(price)}
+                          <span className="block text-xs font-normal text-cream/50">
+                            {peso(depositFor(Number(price)))} down
+                          </span>
+                        </span>
+                      </li>
+                    );
+                  })}
                   </ul>
                 </div>
               )}
