@@ -139,7 +139,7 @@ export default async function Home() {
                         <span className="text-right font-medium">
                           {peso(price)}
                           <span className="block text-xs font-normal text-cream/50">
-                            {peso(depositFor(Number(price)))} down
+                            {peso(depositFor(Number(price)))} downpayment
                           </span>
                         </span>
                       </li>
