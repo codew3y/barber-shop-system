@@ -57,7 +57,31 @@ async function sendSms(to: string, body: string): Promise<boolean> {
   }
 }
 
-export type BookingEvent = 'booking_confirmed' | 'booking_cancelled' | 'booking_rescheduled';
+export type BookingEvent =
+  | 'booking_confirmed'
+  | 'booking_cancelled'
+  | 'booking_rescheduled'
+  | 'reminder_24h'
+  | 'reminder_1h';
+
+function subjectFor(
+  event: BookingEvent,
+  serviceName: string,
+  shopName: string
+): string {
+  switch (event) {
+    case 'booking_confirmed':
+      return `Booking confirmed: ${serviceName} at ${shopName}`;
+    case 'booking_cancelled':
+      return `Booking cancelled: ${serviceName} at ${shopName}`;
+    case 'booking_rescheduled':
+      return `Booking rescheduled: ${serviceName} at ${shopName}`;
+    case 'reminder_24h':
+      return `Reminder: ${serviceName} at ${shopName} tomorrow`;
+    case 'reminder_1h':
+      return `Reminder: ${serviceName} at ${shopName} in one hour`;
+  }
+}
 
 export async function queueBookingNotifications(bookingId: string, event: BookingEvent): Promise<void> {
   try {
@@ -72,12 +96,7 @@ export async function queueBookingNotifications(bookingId: string, event: Bookin
     if (!booking) return;
 
     const when = booking.startAt.toLocaleString();
-    const subject =
-      event === 'booking_confirmed'
-        ? `Booking confirmed: ${booking.service.name} at ${booking.shop.name}`
-        : event === 'booking_cancelled'
-          ? `Booking cancelled: ${booking.service.name} at ${booking.shop.name}`
-          : `Booking rescheduled: ${booking.service.name} at ${booking.shop.name}`;
+    const subject = subjectFor(event, booking.service.name, booking.shop.name);
     const text = `${subject} — ${when}.`;
 
     const targets: { channel: 'email' | 'sms'; to: string | null }[] = [

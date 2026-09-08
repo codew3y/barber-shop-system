@@ -13,6 +13,7 @@
 | M1 — Architecture & Schema Locked | ✅ Done | `PHASE-2-ARCHITECTURE.md`, `PROJECT.md` 2.1–2.5 `[x]` |
 | M2 — Auth & Core Booking MVP | ✅ Done | 3.1–3.6 ✅, e2e green |
 | M3 — Staff/Admin Dashboard | ✅ Done | 4.1 ✅, 4.2 ✅, 4.3 via 15s polling (WebSocket deferred, push optional) |
+| M4 — Payments & Notifications | ✅ Done | 5.1 ✅ (Stripe code live, needs keys), 5.2 ✅ (prefs deferred), 5.3 ✅ (ICS export; Google sync deferred) |
 | M3 — Staff/Admin Dashboard | ⬜ | Phase 4 |
 | M4 — Payments & Notifications | ⬜ | Phase 5 |
 | M5 — Security Hardening & QA | ⬜ | Phase 6 |
@@ -65,6 +66,7 @@
 | 2026-09-08 | Home content batch: 3 barbers (title field + migration), text-style Book links, services with per-barber pricing + summaries, barbers intro line, scroll-spy nav highlight, footer location block, visit section removed. E2E green. |
 | 2026-09-08 | Pushed full local batch to GitHub. Started Phase 4 (staff/admin dashboards). |
 | 2026-09-08 | Completed Phase 4 (M3): staff API (schedule/status/time-off/earnings) + /staff UI, admin API (staff/service CRUD, bookings, analytics, settings, shop-wide time-off) + /admin UI, 15s polling for live updates (WebSocket deferred to later). Live-verified all flows; lint 0 errors, build + e2e green. |
+| 2026-09-08 | Completed Phase 5 (M4): Stripe intents (deposit/full, 20% default) + signature-verified webhooks + admin refunds; 24h/1h reminders with dedupe + shop opt-out; jobs runner (holds, reminders, no-show + fee, `npm run jobs` + keyed HTTP trigger); ICS download + confirmation link. Live-verified with timed fixtures; 15/15 tests, build + e2e green. Needs Stripe/SMTP keys for live money + delivery. |
 
 ## Quickstart (fresh machine / resume)
 
