@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { CalendarDays } from 'lucide-react';
 import { apiJson } from '@/lib/api-client';
@@ -24,7 +24,7 @@ function MonthCalendar({ value, onChange }: { value: string; onChange: (iso: str
     return { y, m: m - 1 };
   });
   const today = new Date().toISOString().slice(0, 10);
-  const maxDate = useMemo(() => new Date(Date.now() + 60 * 86_400_000).toISOString().slice(0, 10), []);
+  const [maxDate] = useState(() => new Date(Date.now() + 60 * 86_400_000).toISOString().slice(0, 10));
 
   const firstDow = new Date(Date.UTC(cursor.y, cursor.m, 1)).getUTCDay();
   const daysInMonth = new Date(Date.UTC(cursor.y, cursor.m + 1, 0)).getUTCDate();

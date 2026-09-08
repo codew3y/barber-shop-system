@@ -72,6 +72,7 @@
 | 2026-09-08 | Flow compaction: single Barber\|Service panel (cross-outs both directions), side-by-side date\|time panel with unavailable labels, tighter spacing — fits above the fold. E2E green, screenshot-verified. |
 | 2026-09-08 | Fixed 12am-slot bug: slot engine now works in shop timezone (Intl-based, no deps); house moved to Asia/Manila + Quezon City address; SlotPicker formats in shop tz; API returns tz. 19/19 tests, e2e green. |
 | 2026-09-08 | Completed Phase 6 (M5): security headers, free-text sanitization, wider rate limits; 11/11 RBAC/IDOR matrix; 8-way race proves no double-booking; axe clean; `docs/SECURITY.md`. Lint 0 errors, build + e2e green. |
+| 2026-09-08 | Live data layer: Neon Postgres (btree_gist ✓, 4 migrations, seeded) + Upstash Redis verified; fixed pasted redis-cli fragment into rediss:// URL; app serves BarberHouse end-to-end from Neon. |
 
 ## Quickstart (fresh machine / resume)
 
