@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
 import { CalendarCheck, LogIn } from 'lucide-react';
@@ -20,22 +21,34 @@ function BrandMark() {
 
 function Nav() {
   const { user, ready, clear, hydrate } = useAuthStore();
+  const pathname = usePathname();
+  const [hash, setHash] = useState('');
   useEffect(() => {
     void hydrate();
   }, [hydrate]);
+  useEffect(() => {
+    const update = () => setHash(window.location.hash);
+    update();
+    window.addEventListener('hashchange', update);
+    return () => window.removeEventListener('hashchange', update);
+  }, []);
+
+  const sectionActive = (id: string) => pathname === '/' && hash === `#${id}`;
+  const linkClass = (active: boolean) =>
+    `hidden font-semibold hover:underline sm:inline ${active ? 'text-copper-500' : ''}`;
 
   return (
     <header className="sticky top-0 z-10 border-b border-cream/10 bg-pine-950/95 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
         <BrandMark />
         <nav className="flex items-center gap-3 text-sm sm:gap-5">
-          <Link href="/#services" className="hidden font-semibold hover:underline sm:inline">
+          <Link href="/#services" className={linkClass(sectionActive('services'))}>
             Services
           </Link>
-          <Link href="/#barbers" className="hidden font-semibold hover:underline sm:inline">
+          <Link href="/#barbers" className={linkClass(sectionActive('barbers'))}>
             Barbers
           </Link>
-          <Link href="/#visit" className="hidden font-semibold hover:underline sm:inline">
+          <Link href="/#visit" className={linkClass(sectionActive('visit'))}>
             Visit
           </Link>
           {ready && user ? (
