@@ -59,6 +59,7 @@
 | 2026-09-07 | Squared all buttons/CTAs (rounded-full → subtle rounded) per feedback; avatar circles kept round. |
 | 2026-09-07 | Palette swap per feedback: charcoal + crimson (brown/copper gone). Screenshot-verified. |
 | 2026-09-07 | Modern type per feedback: Space Grotesk display + Geist body (serif/Arial gone). Screenshot-verified. |
+| 2026-09-07 | Removed lower-left "N" watermark (Next.js dev indicator) via devIndicators:false. Verified gone. |
 
 ## Quickstart (fresh machine / resume)
 
