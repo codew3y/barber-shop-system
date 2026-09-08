@@ -26,7 +26,7 @@ Run the evidence yourself: `npm run dev`, then
 | A07 Auth Failures | ✅ | 5–10/min rate limits on auth endpoints; generic "Invalid credentials" (no enumeration); forgot-password always returns success |
 | A08 Data Integrity | ✅ | Stripe webhook signature required (400 without); refresh-token rotation blacklists old JTIs |
 | A09 Logging Failures | ✅ | `audit_log` rows on booking cancel/reschedule/status/hold-expiry; structured JSON summaries from job runs |
-| A10 SSRF | ✅ | No server-side fetches of user URLs; provider calls fixed to api.sendgrid.com / api.twilio.com / api.stripe.com |
+| A10 SSRF | ✅ | No server-side fetches of user URLs; SMTP sends only to the booking customer's own address |
 
 ## Deliberate deviations
 
