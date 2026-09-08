@@ -8,8 +8,7 @@ import { apiJson } from '@/lib/api-client';
 import { peso } from '@/lib/format';
 import type { Booking, StaffMember } from '@/lib/types';
 import { ArrowRight, CalendarClock, ClipboardCheck, Scissors } from 'lucide-react';
-import { ServiceSelector } from './ServiceSelector';
-import { StaffPicker } from './StaffPicker';
+import { BarberServicePicker } from './BarberServicePicker';
 import { SlotPicker } from './SlotPicker';
 const steps = [
   { key: 'service', label: 'Barber & Service', Icon: Scissors },
@@ -110,9 +109,9 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
   return (
     <div>
       <p className="text-xs font-semibold tracking-widest text-copper-200">BOOKING — {shopName.toUpperCase()}</p>
-      <h1 className="font-display mb-5 text-3xl">Take a chair in three steps</h1>
+      <h1 className="font-display mb-3 text-2xl">Take a chair in three steps</h1>
 
-      <ol className="mb-6 flex flex-wrap gap-2 text-sm">
+      <ol className="mb-4 flex flex-wrap gap-2 text-sm">
         {steps.map(({ key, label, Icon }, i) => (
           <li
             key={key}
@@ -130,35 +129,25 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
       </ol>
 
       {step === 'service' && (
-        <div className="grid gap-6">
-          <div>
-            <h2 className="font-display mb-3 text-xl">1 · Pick a service</h2>
-            <ServiceSelector
-              shopId={shopId}
-              selected={service}
-              onSelect={(s) => {
-                setService(s);
-                if (staff && !(staff.services ?? []).some((x) => x.service.id === s.id)) {
-                  clearStaff();
-                }
-              }}
-            />
-          </div>
-          <div>
-            <h2 className="font-display mb-3 text-xl">2 · Pick your barber</h2>
-            {staff && (
-              <p className="mb-2 text-sm text-cream/60">
-                Barber: <span className="font-medium text-cream">{staff.user.firstName} {staff.user.lastName}</span> — tap another card to change.
-              </p>
-            )}
-            <StaffPicker shopId={shopId} serviceId={service?.id} selected={staff} onSelect={setStaff} />
-          </div>
-          {error && <p className="text-sm text-red-300">{error}</p>}
-          <div>
+        <div>
+          <BarberServicePicker
+            shopId={shopId}
+            service={service}
+            staff={staff}
+            onSelectService={(s) => {
+              setService(s);
+              if (staff && !(staff.services ?? []).some((x) => x.service.id === s.id)) {
+                clearStaff();
+              }
+            }}
+            onSelectStaff={setStaff}
+          />
+          {error && <p className="mt-3 text-sm text-red-300">{error}</p>}
+          <div className="mt-3">
             <button
               onClick={() => {
                 if (!canContinueDetails) {
-                  setError('Pick a service and a barber to continue.');
+                  setError('Pick a barber and a service to continue.');
                   return;
                 }
                 go('slot');

@@ -14,7 +14,7 @@ function todayISO(): string {
 
 function prettyDate(iso: string): string {
   const d = new Date(`${iso}T12:00:00Z`);
-  return d.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+  return d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
 export function SlotPicker({
@@ -44,50 +44,61 @@ export function SlotPicker({
   const available = (data?.slots ?? []).filter((s) => s.available);
 
   return (
-    <div>
-      <label className="card mb-4 block cursor-pointer">
-        <span className="flex items-center gap-2 text-xs font-semibold tracking-widest text-copper-200">
-          <CalendarDays size={14} /> PICK A DATE
-        </span>
-        <span className="font-display mt-1 block text-2xl">{prettyDate(date)}</span>
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => e.target.value && setDate(e.target.value)}
-          className="field mt-3 w-full text-lg"
-        />
-      </label>
-
-      <h3 className="font-display mb-2 text-xl">
-        {barberName ? `${barberName}'s open chairs` : 'Open chairs'}
-      </h3>
-      {isLoading ? (
-        <p className="text-cream/60">Checking the books…</p>
-      ) : available.length === 0 ? (
-        <p className="text-cream/60">No open chairs this date — try another day.</p>
-      ) : (
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-          {data?.slots.map((slot) => (
-            <button
-              key={slot.startTime}
-              disabled={!slot.available}
-              onClick={() => onSelect(slot)}
-              className={`rounded border px-2 py-2 text-base font-medium ${
-                selected?.startTime === slot.startTime
-                  ? 'border-copper-500 bg-copper-600 text-cream'
-                  : slot.available
-                    ? 'border-cream/15 bg-pine-900 hover:border-copper-500'
-                    : 'cursor-not-allowed border-cream/10 text-cream/40 line-through'
-              }`}
-            >
-              {new Date(slot.startTime).toLocaleTimeString([], {
-                hour: 'numeric',
-                minute: '2-digit',
-              })}
-            </button>
-          ))}
+    <div className="card">
+      <div className="grid gap-4 sm:grid-cols-[220px_1fr]">
+        {/* Left: date */}
+        <div>
+          <p className="flex items-center gap-1.5 text-xs font-semibold tracking-widest text-copper-200">
+            <CalendarDays size={14} /> DATE
+          </p>
+          <p className="font-display mt-1 text-xl">{prettyDate(date)}</p>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => e.target.value && setDate(e.target.value)}
+            className="field mt-2 w-full"
+          />
         </div>
-      )}
+        {/* Right: times */}
+        <div>
+          <p className="mb-2 text-xs font-semibold tracking-widest text-copper-200">
+            {barberName ? `${barberName.toUpperCase()}'S TIME` : 'TIME'}
+          </p>
+          {isLoading ? (
+            <p className="text-sm text-cream/60">Checking the books…</p>
+          ) : available.length === 0 ? (
+            <p className="text-sm text-cream/60">Fully booked — try another day.</p>
+          ) : (
+            <div className="grid grid-cols-3 gap-1.5">
+              {(data?.slots ?? []).map((slot) => {
+                const time = new Date(slot.startTime).toLocaleTimeString([], {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                });
+                return (
+                  <button
+                    key={slot.startTime}
+                    disabled={!slot.available}
+                    onClick={() => onSelect(slot)}
+                    className={`rounded border px-1 py-1.5 text-sm font-medium ${
+                      selected?.startTime === slot.startTime
+                        ? 'border-copper-500 bg-copper-600 text-cream'
+                        : slot.available
+                          ? 'border-cream/15 bg-pine-950 hover:border-copper-500'
+                          : 'cursor-not-allowed border-cream/10 text-cream/40'
+                    }`}
+                  >
+                    <span className={slot.available ? '' : 'line-through'}>{time}</span>
+                    {!slot.available && (
+                      <span className="block text-[10px] font-normal">unavailable</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
