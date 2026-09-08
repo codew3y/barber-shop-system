@@ -39,6 +39,17 @@ body {
   font-family: var(--font-sans);
 }
 
+@layer base {
+  /* Simple press feedback on every button (uses the independent `scale`
+     property so it composes with Tailwind translate/hover effects). */
+  button {
+    transition: scale 0.12s ease;
+  }
+  button:active:not(:disabled) {
+    scale: 0.96;
+  }
+}
+
 .font-display {
   font-family: var(--font-display);
   font-weight: 900;

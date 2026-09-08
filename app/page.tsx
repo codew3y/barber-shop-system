@@ -82,12 +82,12 @@ export default async function Home() {
           >
             Book your chair
           </Link>
-          <Link
+          <a
             href="#services"
             className="rounded border border-cream/25 px-7 py-3 transition-all duration-150 hover:border-copper-500/60 hover:bg-cream/10 active:scale-[0.98]"
           >
             View the menu
-          </Link>
+          </a>
         </div>
       </section>
 
