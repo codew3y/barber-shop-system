@@ -88,7 +88,7 @@ export function CheckoutFlow({ shopId, shopName }: { shopId: string; shopName: s
         {steps.map((label, i) => (
           <li
             key={label}
-            className={`rounded-full px-3 py-1 ${
+            className={`rounded px-3 py-1 ${
               stepFor(step) === i
                 ? 'bg-pine-900 font-medium text-cream'
                 : stepFor(step) > i

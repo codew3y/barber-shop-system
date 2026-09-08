@@ -53,13 +53,13 @@ export default function DashboardPage() {
           <Link href={`/bookings/${b.id}`} className="font-medium text-cream hover:underline">
             {b.service?.name} at {b.shop?.name}
           </Link>
-          <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${active ? 'bg-copper-600/20 text-copper-200' : 'bg-cream/10 text-cream/60'}`}>{b.status}</span>
+          <span className={`shrink-0 rounded px-2 py-0.5 text-xs font-medium ${active ? 'bg-copper-600/20 text-copper-200' : 'bg-cream/10 text-cream/60'}`}>{b.status}</span>
         </div>
         <p className="mt-1 text-sm text-cream/60">
           {new Date(b.startAt).toLocaleString()} · {b.staff?.user.firstName} {b.staff?.user.lastName}
         </p>
         {active && (
-          <button onClick={() => cancel(b.id)} className="mt-3 rounded-full border border-cream/20 px-3 py-1 text-sm text-cream hover:bg-cream/10">
+          <button onClick={() => cancel(b.id)} className="mt-3 rounded border border-cream/20 px-3 py-1 text-sm text-cream hover:bg-cream/10">
             Release chair
           </button>
         )}
