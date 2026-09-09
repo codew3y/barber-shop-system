@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import { Toaster } from 'sonner';
 import { CalendarCheck, Clock3, LogIn, MapPin, Phone, Scissors } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { apiJson } from '@/lib/api-client';
@@ -237,6 +238,17 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <Nav />
       <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8">{children}</main>
       <Footer />
+      <Toaster
+        theme="dark"
+        position="bottom-center"
+        toastOptions={{
+          style: {
+            background: '#0e0d0b',
+            border: '1px solid rgba(247,242,233,0.12)',
+            color: '#f7f2e9',
+          },
+        }}
+      />
     </QueryClientProvider>
   );
 }

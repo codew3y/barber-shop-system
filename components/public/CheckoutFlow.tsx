@@ -6,6 +6,7 @@ import { useBookingStore } from '@/stores/bookingStore';
 import { useAuthStore } from '@/stores/authStore';
 import { apiJson } from '@/lib/api-client';
 import { depositFor, peso } from '@/lib/format';
+import { toast } from 'sonner';
 import type { Booking, StaffMember } from '@/lib/types';
 import { ArrowLeft, ArrowRight, CalendarClock, Check, ClipboardCheck, Scissors } from 'lucide-react';
 import { BarberServicePicker } from './BarberServicePicker';
@@ -179,9 +180,12 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
         }
       );
       reset();
+      toast.success('Chair reserved — see you soon.');
       router.push(`/bookings/${data.booking.id}`);
     } catch (e) {
-      setError((e as Error).message);
+      const message = (e as Error).message;
+      setError(message);
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }
