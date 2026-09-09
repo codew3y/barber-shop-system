@@ -40,16 +40,15 @@ test('guest books end-to-end and tracks in dashboard', async ({ page }) => {
 
   // Step 4: review & checkout — guest details with email, then QRPh downpayment
   // (keyless CI takes the manual reference-QR fallback; PayMongo dynamic QR in prod)
-  await page.getByPlaceholder('First name').fill('E2E');
-  await page.getByPlaceholder('Last name').fill('Guest');
+  await page.getByPlaceholder('Full name').fill('E2E Guest');
   await page.getByPlaceholder('Phone number').fill(phone);
   await page.getByPlaceholder('Email for confirmation').fill(`e2e${Date.now()}@example.com`);
-  await page.getByRole('button', { name: 'Scan QRPh for payment' }).click();
+  await page.getByRole('button', { name: 'Proceed to payment' }).click();
 
-  // QR downpayment panel
+  // QR downpayment panel (manual fallback in keyless CI) → continue to booking
   await expect(page.getByTestId('qr-code')).toBeVisible({ timeout: 15000 });
   await expect(page.getByText(/downpayments are non-refundable/i).first()).toBeVisible();
-  await page.getByRole('button', { name: "I've paid" }).click();
+  await page.getByRole('link', { name: /Continue to my booking/ }).click();
 
   // Confirmation page
   await expect(page.getByRole('heading', { name: /Chair reserved/ })).toBeVisible({ timeout: 15000 });

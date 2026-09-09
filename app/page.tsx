@@ -1,9 +1,12 @@
 import Link from 'next/link';
 import { ArrowRight, CalendarClock, RefreshCw, Scissors } from 'lucide-react';
-import { prisma } from '@/lib/prisma';
+import { getShopPageData } from '@/lib/shop-page-data';
 import { Reveal } from '@/components/ui/Reveal';
 import { depositFor, peso, priceRange } from '@/lib/format';
 import { Faq } from '@/components/faq';
+
+// Services/staff change rarely — serve statically, refresh in background.
+export const revalidate = 60;
 
 const features = [
   {
@@ -24,35 +27,8 @@ const features = [
 ];
 
 export default async function Home() {
-  const shop = await prisma.shop.findFirst({
-    where: { isActive: true, deletedAt: null },
-    orderBy: { createdAt: 'asc' },
-    include: {
-      services: {
-        where: { isActive: true, deletedAt: null },
-        orderBy: { price: 'asc' },
-        include: {
-          staff: {
-            select: {
-              customPrice: true,
-              staff: {
-                select: {
-                  id: true,
-                  user: { select: { firstName: true, lastName: true } },
-                },
-              },
-            },
-          },
-        },
-      },
-      staff: {
-        where: { isActive: true, deletedAt: null },
-        include: { user: { select: { firstName: true, lastName: true } } },
-      },
-    },
-  });
-
-  if (!shop) {
+  const data = await getShopPageData();
+  if (!data) {
     return (
       <div className="card mx-auto max-w-lg text-center">
         <h1 className="font-display text-2xl">The house isn&apos;t open yet</h1>
@@ -64,9 +40,11 @@ export default async function Home() {
     );
   }
 
+  const { shop, services, staff } = data;
+
   const stats: [string, string][] = [
-    [String(shop.staff.length).padStart(2, '0'), 'Barbers on the floor'],
-    [String(shop.services.length).padStart(2, '0'), 'Services on the menu'],
+    [String(staff.length).padStart(2, '0'), 'Barbers on the floor'],
+    [String(services.length).padStart(2, '0'), 'Services on the menu'],
     ['20%', 'Downpayment to hold'],
   ];
 
@@ -165,7 +143,7 @@ export default async function Home() {
         </Reveal>
 
         <ul className="mt-8 grid gap-4 sm:grid-cols-2">
-          {shop.services.map((s, i) => (
+          {services.map((s, i) => (
             <Reveal as="li" key={s.id} delay={(i % 2) * 70} className="h-full">
               <div className="card lift-hover flex h-full flex-col">
                 {/* Classic menu leader: name — dotted rule — price */}
@@ -236,7 +214,7 @@ export default async function Home() {
         </Reveal>
 
         <ul className="mt-8 grid gap-4 sm:grid-cols-3">
-          {shop.staff.map((s, i) => (
+          {staff.map((s, i) => (
             <Reveal as="li" key={s.id} delay={i * 70} className="h-full">
               <div className="card lift-hover flex h-full flex-col">
                 <span

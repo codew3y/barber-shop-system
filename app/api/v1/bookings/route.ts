@@ -4,7 +4,6 @@ import { requireAuth, jsonError } from '@/lib/api';
 import { rateLimit } from '@/lib/rate-limit';
 import { getIdempotentResponse, setIdempotentResponse } from '@/lib/idempotency';
 import { HOLD_MINUTES, validateSlotAvailability } from '@/services/bookingService';
-import { queueBookingNotifications } from '@/services/notificationService';
 import { cleanOptional } from '@/lib/sanitize';
 import { createBookingSchema } from '@/schemas/booking';
 
@@ -61,7 +60,8 @@ export async function POST(req: NextRequest) {
       data: payload,
       include: { service: true, staff: { include: { user: { select: { firstName: true, lastName: true } } } }, shop: true },
     });
-    void queueBookingNotifications(booking.id, 'booking_confirmed');
+    // No confirmation email here — it goes out once payment confirms
+    // (webhook auto-confirm, or staff confirming a manual payment).
     return setIdempotentResponse(
       cacheKey,
       NextResponse.json({ booking, holdExpiresAt: booking.holdExpiresAt }, { status: 201 })
@@ -94,7 +94,6 @@ export async function POST(req: NextRequest) {
         data: payload,
         include: { service: true, staff: { include: { user: { select: { firstName: true, lastName: true } } } }, shop: true },
       });
-      void queueBookingNotifications(booking.id, 'booking_confirmed');
       return setIdempotentResponse(
         cacheKey,
         NextResponse.json({ booking, holdExpiresAt: booking.holdExpiresAt }, { status: 201 })

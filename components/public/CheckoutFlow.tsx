@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useBookingStore } from '@/stores/bookingStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -115,7 +116,7 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
     useBookingStore();
   const { user, setSession } = useAuthStore();
   const [notes, setNotes] = useState('');
-  const [guest, setGuest] = useState({ firstName: '', lastName: '', phone: '', email: '' });
+  const [guest, setGuest] = useState({ name: '', phone: '', email: '' });
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [payment, setPayment] = useState<{
@@ -132,9 +133,10 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
     }
   }, [payment]);
 
-  // PayMongo path: poll for webhook confirmation and auto-advance.
+  // Poll for confirmation (PayMongo webhook or staff manual confirm)
+  // and auto-advance to the confirmation page.
   useEffect(() => {
-    if (!payment?.qrImageUrl) return;
+    if (!payment) return;
     const bookingId = payment.bookingId;
     let tries = 0;
     const timer = setInterval(async () => {
@@ -153,11 +155,11 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
           router.push(`/bookings/${bookingId}`);
         }
       } catch {
-        // keep polling; the webhook may simply not have landed yet
+        // keep polling; confirmation may simply not have landed yet
       }
     }, 3000);
     return () => clearInterval(timer);
-  }, [payment?.qrImageUrl, payment?.bookingId, reset, router]);
+  }, [payment, reset, router]);
 
   useEffect(() => {
     let cancelled = false;
@@ -183,19 +185,28 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
 
   async function ensureAccount(): Promise<boolean> {
     if (user) return true;
+    const name = guest.name.trim();
     if (
-      !guest.firstName ||
-      !guest.lastName ||
+      !name ||
       guest.phone.replace(/\D/g, '').length < 7 ||
       !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(guest.email)
     ) {
       setError('Add your name, phone number, and email — no password needed.');
       return false;
     }
+    const [firstName, ...rest] = name.split(/\s+/);
     try {
       const data = await apiJson<{ user: never; accessToken: string; refreshToken: string }>(
         '/api/v1/auth/guest',
-        { method: 'POST', body: JSON.stringify(guest) }
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            firstName,
+            lastName: rest.join(' ') || firstName,
+            phone: guest.phone,
+            email: guest.email,
+          }),
+        }
       );
       setSession(data.user, data.accessToken, data.refreshToken);
       return true;
@@ -361,20 +372,12 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
                   password.
                 </p>
                 <div className="mt-5 grid gap-3">
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <input
-                      placeholder="First name"
-                      value={guest.firstName}
-                      onChange={(e) => setGuest({ ...guest, firstName: e.target.value })}
-                      className="field"
-                    />
-                    <input
-                      placeholder="Last name"
-                      value={guest.lastName}
-                      onChange={(e) => setGuest({ ...guest, lastName: e.target.value })}
-                      className="field"
-                    />
-                  </div>
+                  <input
+                    placeholder="Full name"
+                    value={guest.name}
+                    onChange={(e) => setGuest({ ...guest, name: e.target.value })}
+                    className="field"
+                  />
                   <input
                     placeholder="Phone number"
                     type="tel"
@@ -416,13 +419,13 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
                   reference={payment.reference}
                   qrImageUrl={payment.qrImageUrl}
                   onBack={() => setPayment(null)}
-                  onPaid={() =>
-                    finishReserve(
-                      payment.bookingId,
-                      `Payment noted (${payment.reference}) — show it at the shop.`
-                    )
-                  }
                 />
+                <Link
+                  href={`/bookings/${payment.bookingId}`}
+                  className="mt-4 inline-block text-sm text-ivory-dim underline hover:text-ivory"
+                >
+                  Continue to my booking →
+                </Link>
               </div>
             ) : (
               <div className="mt-6 flex gap-3">
@@ -434,7 +437,7 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
                     'Reserving…'
                   ) : (
                     <>
-                      <QrCode size={15} /> Scan QRPh for payment
+                      <QrCode size={15} /> Proceed to payment
                     </>
                   )}
                 </button>

@@ -74,7 +74,15 @@ function Nav() {
       .map((id) => document.getElementById(id))
       .filter((el): el is HTMLElement => el !== null);
     elements.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
+    // Back at the very top (hero), no section is active — clear the stale highlight.
+    const onScroll = () => {
+      if (window.scrollY < 120) setActiveSection('');
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('scroll', onScroll);
+    };
   }, [pathname]);
 
   const linkActive = (id: string) => pathname === '/' && activeSection === id;
