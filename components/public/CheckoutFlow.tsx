@@ -212,7 +212,7 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
       <StepRail current={stepIndex(step)} />
 
       {step === 'service' && (
-        <div>
+        <div key="service" className="step-enter">
           <BarberServicePicker
             shopId={shopId}
             service={service}
@@ -244,7 +244,7 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
       )}
 
       {step === 'slot' && service && staff && (
-        <>
+        <div key="slot" className="step-enter">
           <SlotPicker
             shopId={shopId}
             staffId={staff.id}
@@ -271,11 +271,11 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
               Continue <ArrowRight size={15} />
             </button>
           </div>
-        </>
+        </div>
       )}
 
       {step === 'checkout' && service && staff && slot && (
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="step-enter grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
           {/* Guest details + notes */}
           <div className="card order-2 lg:order-1">
             <h2 className="font-display text-xl">Your details</h2>
