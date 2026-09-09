@@ -3,6 +3,7 @@ import { ArrowRight, CalendarClock, RefreshCw, Scissors } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { Reveal } from '@/components/ui/Reveal';
 import { depositFor, peso, priceRange } from '@/lib/format';
+import { Faq } from '@/components/faq';
 
 const features = [
   {
@@ -287,6 +288,33 @@ export default async function Home() {
           </Link>
         </section>
       </Reveal>
+
+      {/* ---------------------------------------------------------- House rules */}
+      <section className="mt-24">
+        <Reveal>
+          <p className="eyebrow">House rules</p>
+          <h2 className="font-display mt-3 text-4xl sm:text-5xl">Fair chairs for all</h2>
+        </Reveal>
+        <ul className="mt-8 grid gap-4 sm:grid-cols-3">
+          {[
+            { title: '20% down', text: 'A small downpayment holds your chair. It comes off your total at the shop.' },
+            { title: 'Free moves', text: 'Reschedule or cancel from your dashboard — no calls, no awkwardness.' },
+            { title: '15-minute grace', text: 'Running late? Your chair holds 15 minutes past start before release.' },
+          ].map((r, i) => (
+            <Reveal as="li" key={r.title} delay={i * 70} className="h-full">
+              <div className="card lift-hover h-full border-l-2">
+                <p className="font-medium">
+                  <span className="mr-2 text-ivory-dim/50" data-numeric>0{i + 1}</span>
+                  {r.title}
+                </p>
+                <p className="muted mt-2 text-sm leading-relaxed">{r.text}</p>
+              </div>
+            </Reveal>
+          ))}
+        </ul>
+      </section>
+
+      <Faq />
     </div>
   );
 }
