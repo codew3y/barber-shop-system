@@ -5,6 +5,12 @@ import { sendEmail } from '@/lib/smtp';
 // notification rows stay `pending` (visible in status tracking).
 // SMS was dropped: email-only notifications.
 
+// Guest checkout accounts get synthetic undeliverable addresses —
+// emailing them only produces bounces, so we skip those silently.
+export function isGuestEmail(email: string): boolean {
+  return email.toLowerCase().endsWith('@barberhouse.local');
+}
+
 export type BookingEvent =
   | 'booking_confirmed'
   | 'booking_cancelled'
@@ -48,6 +54,10 @@ export async function queueBookingNotifications(bookingId: string, event: Bookin
     const text = `${subject} — ${when}.`;
     const to = booking.customer.email;
     if (!to) return;
+    if (isGuestEmail(to)) {
+      console.log(`[notify:skip] guest address ${to} — no email queued`);
+      return;
+    }
 
     const notification = await prisma.notification.create({
       data: {
