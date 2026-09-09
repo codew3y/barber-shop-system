@@ -7,6 +7,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowUpRight, CalendarX2 } from 'lucide-react';
 import { apiFetch, apiJson } from '@/lib/api-client';
 import { useAuthStore } from '@/stores/authStore';
+import { HoldButton } from '@/components/hold-button';
+import { toast } from 'sonner';
 import type { Booking } from '@/lib/types';
 
 function PageSkeleton({ note }: { note: string }) {
@@ -55,9 +57,12 @@ export default function DashboardPage() {
     const res = await apiFetch(`/api/v1/bookings/${id}/cancel`, { method: 'PUT', body: '{}' });
     if (!res.ok) {
       const d = await res.json().catch(() => ({}));
-      setError((d as { error?: string }).error ?? 'Cancel failed');
+      const message = (d as { error?: string }).error ?? 'Cancel failed';
+      setError(message);
+      toast.error(message);
       return;
     }
+    toast.success('Chair released.');
     queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
   }
 
@@ -107,15 +112,11 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {active && (
-          <button
-            onClick={() => cancel(b.id)}
-            className="btn-quiet shrink-0 self-start sm:self-center"
-          >
-            <CalendarX2 size={13} />
-            Release chair
-          </button>
-        )}
+          {active && (
+            <div className="shrink-0 self-start sm:self-center">
+              <HoldButton onConfirm={() => cancel(b.id)}>Hold to release</HoldButton>
+            </div>
+          )}
       </li>
     );
   }
