@@ -37,5 +37,5 @@ Run the evidence yourself: `npm run dev`, then
 ## Before launch
 
 1. `npm audit fix` the transitive vulns (or document exceptions).
-2. Redis-backed rate limits + `INTERNAL_JOB_KEY`, `STRIPE_*`, `SENDGRID_*`, `TWILIO_*` set.
+2. Redis-backed rate limits + `INTERNAL_JOB_KEY`, `PAYMONGO_*` set.
 3. Re-run `scripts/security-audit.ts` against staging.

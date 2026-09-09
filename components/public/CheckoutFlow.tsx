@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useBookingStore } from '@/stores/bookingStore';
 import { useAuthStore } from '@/stores/authStore';
-import { apiJson } from '@/lib/api-client';
+import { apiFetch, apiJson } from '@/lib/api-client';
 import { depositFor, peso } from '@/lib/format';
 import { toast } from 'sonner';
 import type { Booking, StaffMember } from '@/lib/types';
@@ -118,7 +118,12 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
   const [guest, setGuest] = useState({ firstName: '', lastName: '', phone: '', email: '' });
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [payment, setPayment] = useState<{ bookingId: string; amount: number; reference: string } | null>(null);
+  const [payment, setPayment] = useState<{
+    bookingId: string;
+    amount: number;
+    reference: string | null;
+    qrImageUrl: string | null;
+  } | null>(null);
   const paymentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -126,6 +131,33 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
       paymentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, [payment]);
+
+  // PayMongo path: poll for webhook confirmation and auto-advance.
+  useEffect(() => {
+    if (!payment?.qrImageUrl) return;
+    const bookingId = payment.bookingId;
+    let tries = 0;
+    const timer = setInterval(async () => {
+      tries += 1;
+      if (tries > 100) {
+        clearInterval(timer);
+        return;
+      }
+      try {
+        const data = await apiJson<{ booking: Booking }>(`/api/v1/bookings/${bookingId}`);
+        if (data.booking.status === 'confirmed') {
+          clearInterval(timer);
+          setPayment(null);
+          reset();
+          toast.success('Payment confirmed — see you soon.');
+          router.push(`/bookings/${bookingId}`);
+        }
+      } catch {
+        // keep polling; the webhook may simply not have landed yet
+      }
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [payment?.qrImageUrl, payment?.bookingId, reset, router]);
 
   useEffect(() => {
     let cancelled = false;
@@ -174,6 +206,8 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
   }
 
   // Reserve the chair, then collect the downpayment over QRPh.
+  // Primary: PayMongo dynamic QR (auto-confirm via webhook).
+  // Fallback: manual reference QR when payments aren't configured (dev/CI).
   async function proceedToPayment() {
     if (!service || !staff || !slot) return;
     setError(null);
@@ -195,11 +229,24 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
         }
       );
       const bookingId = bookingData.booking.id;
-      const qr = await apiJson<{ amount: string; reference: string }>('/api/v1/payments/qr', {
+      const intentRes = await apiFetch('/api/v1/payments/create-intent', {
         method: 'POST',
         body: JSON.stringify({ bookingId, type: 'deposit' }),
       });
-      setPayment({ bookingId, amount: Number(qr.amount), reference: qr.reference });
+      if (intentRes.status === 503) {
+        const qr = await apiJson<{ amount: string; reference: string }>('/api/v1/payments/qr', {
+          method: 'POST',
+          body: JSON.stringify({ bookingId, type: 'deposit' }),
+        });
+        setPayment({ bookingId, amount: Number(qr.amount), reference: qr.reference, qrImageUrl: null });
+        return;
+      }
+      if (!intentRes.ok) {
+        const errBody = (await intentRes.json().catch(() => ({}))) as { error?: string };
+        throw new Error(errBody.error ?? `Payment failed (${intentRes.status})`);
+      }
+      const intent = (await intentRes.json()) as { amount: string; qrImageUrl: string };
+      setPayment({ bookingId, amount: Number(intent.amount), reference: null, qrImageUrl: intent.qrImageUrl });
     } catch (e) {
       const message = (e as Error).message;
       setError(message);
@@ -367,6 +414,7 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
                 <QrPay
                   amount={payment.amount}
                   reference={payment.reference}
+                  qrImageUrl={payment.qrImageUrl}
                   onBack={() => setPayment(null)}
                   onPaid={() =>
                     finishReserve(

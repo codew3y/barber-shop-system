@@ -38,7 +38,8 @@ test('guest books end-to-end and tracks in dashboard', async ({ page }) => {
   await slotButton.click();
   await page.getByRole('button', { name: 'Continue' }).click();
 
-  // Step 4: review & checkout — guest details with email, then Stripe test card
+  // Step 4: review & checkout — guest details with email, then QRPh downpayment
+  // (keyless CI takes the manual reference-QR fallback; PayMongo dynamic QR in prod)
   await page.getByPlaceholder('First name').fill('E2E');
   await page.getByPlaceholder('Last name').fill('Guest');
   await page.getByPlaceholder('Phone number').fill(phone);
