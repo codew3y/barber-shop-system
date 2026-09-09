@@ -1,26 +1,16 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowRight, MapPin, Phone } from 'lucide-react';
-import { prisma } from '@/lib/prisma';
+import { getShopPageData } from '@/lib/shop-page-data';
 import { priceRange } from '@/lib/format';
+
+export const revalidate = 60;
 
 export default async function ShopPage({ params }: { params: Promise<{ shopId: string }> }) {
   const { shopId } = await params;
-  const shop = await prisma.shop.findFirst({
-    where: { id: shopId, deletedAt: null, isActive: true },
-    include: {
-      services: {
-        where: { isActive: true, deletedAt: null },
-        orderBy: { price: 'asc' },
-        include: { staff: { select: { customPrice: true } } },
-      },
-      staff: {
-        where: { isActive: true, deletedAt: null },
-        include: { user: { select: { firstName: true, lastName: true } } },
-      },
-    },
-  });
-  if (!shop) notFound();
+  const data = await getShopPageData(shopId);
+  if (!data) notFound();
+  const { shop, services, staff } = data;
 
   return (
     <div>
@@ -56,7 +46,7 @@ export default async function ShopPage({ params }: { params: Promise<{ shopId: s
           <p className="eyebrow">The menu</p>
           <h2 className="font-display mt-3 mb-5 text-3xl">Services</h2>
           <ul className="grid gap-2.5">
-            {shop.services.map((s) => (
+            {services.map((s) => (
               <li key={s.id} className="card lift-hover py-4">
                 <div className="flex items-baseline gap-3">
                   <span className="font-medium">{s.name}</span>
@@ -81,7 +71,7 @@ export default async function ShopPage({ params }: { params: Promise<{ shopId: s
           <p className="eyebrow">The chairs</p>
           <h2 className="font-display mt-3 mb-5 text-3xl">Barbers</h2>
           <ul className="grid gap-2.5">
-            {shop.staff.map((s) => (
+            {staff.map((s) => (
               <li key={s.id} className="card lift-hover flex items-center gap-3.5 py-4">
                 <span
                   className="font-display flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-brass-300"
