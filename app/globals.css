@@ -1,84 +1,473 @@
 @import "tailwindcss";
 
+/* ==========================================================================
+   BarberHouse design system — "warm ink & brass"
+   Dark, warm near-black ground; ivory type; a single brass accent used
+   sparingly so it still reads as precious. Motion tokens follow the
+   ease/duration guidance in .claude/skills/animate.
+   ========================================================================== */
+
 @theme {
-  /* Brand palette: charcoal + crimson (token names predate the palette). */
-  --color-cream: #faf7f2;
-  --color-parchment: #f1e8d7;
-  --color-espresso: #221a12;
-  --color-bark: #4a3d2e;
+  /* ---- Ground: warm near-blacks (never pure #000 — it reads cheap) ---- */
+  --color-ink-950: #080706;
+  --color-ink-900: #0e0d0b;
+  --color-ink-850: #141210;
+  --color-ink-800: #1a1714;
+  --color-ink-700: #241f1a;
+  --color-ink-600: #322b23;
 
-  --color-pine-950: #101013;
-  --color-pine-900: #191920;
-  --color-pine-800: #232329;
-  --color-pine-700: #2f2f38;
-  --color-pine-100: #e3e3e8;
-  --color-pine-50: #f2f2f4;
+  /* ---- Type: ivory, not white ---- */
+  --color-ivory: #f7f2e9;
+  --color-ivory-dim: #cdc4b6;
 
-  --color-copper-700: #8f1d2c;
-  --color-copper-600: #c22434;
-  --color-copper-500: #e54857;
-  --color-copper-200: #f3b3bb;
-  --color-copper-100: #fbe7e9;
+  /* ---- Accent: brass ---- */
+  --color-brass-700: #6e5417;
+  --color-brass-600: #9a7a22;
+  --color-brass-500: #c4a048;
+  --color-brass-400: #d9bc72;
+  --color-brass-300: #e8d39b;
+  --color-brass-200: #f1e4c2;
 
-  --font-display: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* ---- Semantic ---- */
+  --color-ember: #e4796b; /* errors, destructive */
+  --color-sage: #8ebd97; /* success */
+
+  /* ---- Type families (wired to next/font in app/layout.tsx) ---- */
+  --font-display: var(--font-fraunces), "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* ---- Motion: strong curves; the built-in CSS easings are too weak ---- */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 :root {
-  --background: var(--color-pine-950);
-  --foreground: var(--color-cream);
+  /* Hairlines and lifts, expressed as translucent ivory so they sit *in*
+     the surface rather than drawing a hard box around it. */
+  --line: color-mix(in srgb, var(--color-ivory) 9%, transparent);
+  --line-strong: color-mix(in srgb, var(--color-ivory) 16%, transparent);
+  --lift-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+  --lift: 0 8px 24px -12px rgb(0 0 0 / 0.7);
+  --lift-lg: 0 24px 60px -24px rgb(0 0 0 / 0.85);
+  --glow-brass: 0 12px 40px -16px rgb(196 160 72 / 0.45);
 }
 
 html {
-  font-size: 112.5%; /* 18px base — lifts all rem-based type a step for readability */
+  font-size: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  position: relative;
+  color: var(--color-ivory);
+  background-color: var(--color-ink-950);
+  /* Two soft brass spotlights over the ink ground: depth without an image. */
+  background-image:
+    radial-gradient(60rem 34rem at 50% -10rem, rgb(196 160 72 / 0.13), transparent 70%),
+    radial-gradient(46rem 30rem at 100% 12%, rgb(154 122 34 / 0.08), transparent 65%);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
   font-family: var(--font-sans);
+  font-feature-settings: "cv05" 1, "ss03" 1;
+  letter-spacing: -0.006em;
+}
+
+/* Film grain. Fixed, non-interactive, and cheap — one 120px tile. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+body > * {
+  position: relative;
+  z-index: 1;
 }
 
 @layer base {
-  /* Simple press feedback on every button (uses the independent `scale`
-     property so it composes with Tailwind translate/hover effects). */
-  button {
-    transition: scale 0.12s ease;
+  ::selection {
+    background: color-mix(in srgb, var(--color-brass-500) 30%, transparent);
+    color: var(--color-ivory);
   }
-  button:active:not(:disabled) {
-    scale: 0.96;
-  }
-}
 
-.font-display {
-  font-family: var(--font-display);
-  font-weight: 900;
-  letter-spacing: -0.03em;
+  /* One focus treatment everywhere — brass ring, offset from the ground. */
+  :focus-visible {
+    outline: 2px solid var(--color-brass-400);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Press feedback on every pressable thing. `scale` (the independent
+     property) so it composes with Tailwind's translate/rotate utilities. */
+  button,
+  [role="button"],
+  a[data-press] {
+    transition: scale 160ms var(--ease-out);
+  }
+  button:active:not(:disabled),
+  [role="button"]:active,
+  a[data-press]:active {
+    scale: 0.97;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Numbers must not jitter as they change. */
+  time,
+  [data-numeric] {
+    font-variant-numeric: tabular-nums;
+  }
 }
 
 @layer components {
+  /* ---- Typography -------------------------------------------------- */
+  .font-display {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.022em;
+    line-height: 1.05;
+  }
+
+  /* Small brass label that sits above a heading. */
+  .eyebrow {
+    @apply inline-flex items-center gap-2 text-[0.6875rem] font-semibold uppercase tracking-[0.22em] text-brass-400;
+  }
+
+  .muted {
+    @apply text-ivory-dim;
+  }
+
+  /* Brass, applied to type as a gradient — reads like foil, not paint. */
+  .foil {
+    background-image: linear-gradient(
+      100deg,
+      var(--color-brass-300) 0%,
+      var(--color-brass-500) 38%,
+      var(--color-brass-200) 62%,
+      var(--color-brass-500) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* ---- Surfaces ---------------------------------------------------- */
+  /* Hairline + inner top highlight = a lit edge, the way a real panel
+     catches light. Cheaper and softer than a 1px solid border. */
+  .surface,
+  .card,
+  .band {
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.035), transparent 40%),
+      var(--color-ink-900);
+    border: 1px solid var(--line);
+    box-shadow: var(--lift), inset 0 1px 0 0 rgb(255 255 255 / 0.045);
+  }
+
   .card {
-    @apply rounded-2xl border border-cream/10 bg-pine-900 p-4 transition-all duration-200;
+    border-radius: 1rem;
+    padding: 1.25rem;
   }
-  .field {
-    @apply rounded-lg border border-cream/15 bg-pine-950 px-3 py-2 text-cream outline-none placeholder:text-cream/40 focus:border-copper-500;
+
+  .band {
+    border-radius: 1.75rem;
   }
-  .btn-primary {
-    @apply rounded bg-copper-600 px-5 py-2.5 font-medium text-cream transition-all duration-150 hover:bg-copper-500 hover:shadow-lg hover:shadow-copper-600/30 active:scale-[0.98] disabled:opacity-50;
-  }
-  .btn-ghost {
-    @apply rounded border border-cream/25 px-5 py-2.5 text-cream transition-all duration-150 hover:border-copper-500/60 hover:bg-cream/10 active:scale-[0.98];
-  }
+
+  /* Recessed surface — form fields, tiles, anything that reads as "inside". */
+  .inset,
+  .field,
   .pickable {
-    @apply rounded border border-cream/15 bg-pine-900 p-4 text-left text-cream transition-all duration-150 hover:-translate-y-0.5 hover:border-copper-500/60 hover:shadow-lg hover:shadow-copper-600/10;
+    background: var(--color-ink-950);
+    border: 1px solid var(--line);
+    box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.45);
+  }
+
+  /* ---- App shell --------------------------------------------------- */
+  /* Transparent over the hero; earns its hairline + blur once content is
+     passing underneath. Colour/blur only — nothing here moves. */
+  .site-header {
+    border-bottom: 1px solid transparent;
+    transition:
+      background-color 300ms ease,
+      border-color 300ms ease,
+      backdrop-filter 300ms ease;
+  }
+  .site-header[data-scrolled] {
+    border-bottom-color: var(--line);
+    background: color-mix(in srgb, var(--color-ink-950) 78%, transparent);
+    backdrop-filter: blur(16px) saturate(140%);
+  }
+
+  /* ---- Buttons ----------------------------------------------------- */
+  .btn,
+  .btn-primary,
+  .btn-ghost,
+  .btn-quiet {
+    @apply relative inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium
+           whitespace-nowrap disabled:pointer-events-none disabled:opacity-45;
+  }
+
+  /* Brass fill with dark ink type: the highest-contrast, most "expensive"
+     pairing available in this palette. Reserved for the single primary
+     action on a screen. */
+  .btn-primary {
+    color: var(--color-ink-950);
+    background: linear-gradient(180deg, var(--color-brass-400), var(--color-brass-500));
+    box-shadow: var(--lift-sm), inset 0 1px 0 0 rgb(255 255 255 / 0.35);
+    transition:
+      box-shadow 200ms var(--ease-out),
+      scale 160ms var(--ease-out);
+  }
+  .btn-primary:disabled {
+    box-shadow: none;
+  }
+
+  .btn-ghost {
+    color: var(--color-ivory);
+    border: 1px solid var(--line-strong);
+    background: rgb(255 255 255 / 0.02);
+    transition:
+      border-color 200ms ease,
+      background-color 200ms ease,
+      scale 160ms var(--ease-out);
+  }
+
+  .btn-quiet {
+    @apply px-3 py-1.5 text-xs;
+    color: var(--color-ivory-dim);
+    border: 1px solid var(--line);
+    transition:
+      border-color 200ms ease,
+      color 200ms ease,
+      background-color 200ms ease,
+      scale 160ms var(--ease-out);
+  }
+
+  /* ---- Form fields ------------------------------------------------- */
+  .field {
+    @apply w-full rounded-xl px-3.5 py-2.5 text-sm text-ivory outline-none
+           placeholder:text-ivory-dim/55;
+    transition:
+      border-color 200ms ease,
+      box-shadow 200ms var(--ease-out);
+  }
+  .field:focus {
+    outline: none;
+    border-color: color-mix(in srgb, var(--color-brass-500) 65%, transparent);
+    box-shadow:
+      inset 0 1px 2px rgb(0 0 0 / 0.45),
+      0 0 0 3px color-mix(in srgb, var(--color-brass-500) 18%, transparent);
+  }
+  /* Native date/time pickers ship a black icon that vanishes on dark ink. */
+  .field::-webkit-calendar-picker-indicator {
+    filter: invert(0.85) sepia(0.4) saturate(3) hue-rotate(2deg);
+    cursor: pointer;
+  }
+
+  /* ---- Selectable tiles (barber, service, slot) --------------------- */
+  .pickable {
+    @apply relative rounded-xl p-3.5 text-left;
+    transition:
+      border-color 200ms ease,
+      box-shadow 200ms var(--ease-out),
+      translate 200ms var(--ease-out),
+      scale 160ms var(--ease-out);
   }
   .pickable-selected {
-    @apply border-copper-500 bg-copper-600/10 ring-1 ring-copper-500;
+    border-color: var(--color-brass-500);
+    box-shadow:
+      var(--glow-brass),
+      inset 0 0 0 1px color-mix(in srgb, var(--color-brass-500) 45%, transparent);
+    background:
+      linear-gradient(180deg, rgb(196 160 72 / 0.13), rgb(196 160 72 / 0.05)),
+      var(--color-ink-900);
   }
-  .muted {
-    @apply text-cream/60;
+  .pickable-disabled {
+    @apply cursor-not-allowed opacity-40;
   }
-  .band {
-    @apply rounded-3xl border border-cream/10 bg-pine-900 text-cream;
+
+  /* ---- Badges ------------------------------------------------------ */
+  .badge,
+  .badge-live,
+  .badge-quiet {
+    @apply inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[0.6875rem]
+           font-semibold uppercase tracking-[0.12em];
+  }
+  .badge-live {
+    color: var(--color-brass-300);
+    background: rgb(196 160 72 / 0.14);
+    box-shadow: inset 0 0 0 1px rgb(196 160 72 / 0.28);
+  }
+  .badge-quiet {
+    color: var(--color-ivory-dim);
+    background: rgb(255 255 255 / 0.06);
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+
+  /* ---- Loading ----------------------------------------------------- */
+  .skeleton {
+    @apply relative overflow-hidden rounded-lg;
+    background: var(--color-ink-800);
+  }
+  .skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.06), transparent);
+    animation: shimmer 1.4s linear infinite;
+  }
+}
+
+@layer utilities {
+  /* Hairline divider that fades at both ends — softer than a full rule. */
+  .rule-fade {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--line-strong), transparent);
+  }
+}
+
+/* ==========================================================================
+   Motion
+   ========================================================================== */
+
+@keyframes shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Group entrance for content the visitor sees occasionally (marketing,
+   confirmation). Stagger stays short so nothing feels gated on it. */
+.rise {
+  opacity: 0;
+  animation: rise 420ms var(--ease-out) forwards;
+}
+.rise-1 {
+  animation-delay: 60ms;
+}
+.rise-2 {
+  animation-delay: 120ms;
+}
+.rise-3 {
+  animation-delay: 180ms;
+}
+.rise-4 {
+  animation-delay: 240ms;
+}
+
+/* Scroll reveal (marketing surfaces only). Transform + opacity, fired once. */
+.reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity 550ms var(--ease-out),
+    transform 550ms var(--ease-out);
+}
+.reveal[data-shown] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Hover motion only where there's a real pointer — touch fires hover on tap. */
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:hover:not(:disabled) {
+    box-shadow: var(--glow-brass), inset 0 1px 0 0 rgb(255 255 255 / 0.45);
+  }
+  .btn-ghost:hover {
+    border-color: color-mix(in srgb, var(--color-brass-500) 55%, transparent);
+    background: rgb(255 255 255 / 0.05);
+  }
+  .btn-quiet:hover {
+    border-color: var(--line-strong);
+    color: var(--color-ivory);
+    background: rgb(255 255 255 / 0.04);
+  }
+  .pickable:not(.pickable-disabled):not(.pickable-selected):hover {
+    border-color: color-mix(in srgb, var(--color-brass-500) 45%, transparent);
+    box-shadow: var(--lift);
+    translate: 0 -1px;
+  }
+  .lift-hover:hover {
+    border-color: color-mix(in srgb, var(--color-brass-500) 35%, transparent);
+    box-shadow: var(--lift-lg);
+    translate: 0 -2px;
+  }
+
+  /* Slot tiles lift a hair on hover — pointer devices only. */
+  .slot-hover:hover {
+    border-color: color-mix(in srgb, var(--color-brass-500) 55%, transparent);
+    translate: 0 -1px;
+  }
+
+  /* Arrow nudge inside a hovered `group`. */
+  .group:hover .nudge-x {
+    translate: 2px 0;
+  }
+  .group:hover .nudge-diag {
+    translate: 2px -2px;
+  }
+}
+
+.nudge-x,
+.nudge-diag {
+  transition: translate 200ms var(--ease-out);
+}
+
+.slot-hover {
+  transition:
+    border-color 200ms ease,
+    translate 200ms var(--ease-out);
+}
+
+.lift-hover {
+  transition:
+    border-color 220ms ease,
+    box-shadow 220ms var(--ease-out),
+    translate 220ms var(--ease-out);
+}
+
+/* Reduced motion: keep opacity/colour cues, drop travel. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .rise,
+  .reveal {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+  .lift-hover:hover,
+  .pickable:hover {
+    translate: none;
   }
 }
