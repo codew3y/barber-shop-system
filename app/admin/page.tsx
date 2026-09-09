@@ -3,11 +3,21 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Check, Plus, X } from 'lucide-react';
 import { apiFetch, apiJson } from '@/lib/api-client';
 import { useAuthStore } from '@/stores/authStore';
+import { Tabs } from '@/components/ui/Tabs';
 import { peso } from '@/lib/format';
 
 type Tab = 'overview' | 'bookings' | 'staff' | 'services' | 'settings';
+
+const TABS = [
+  { value: 'overview', label: 'Overview' },
+  { value: 'bookings', label: 'Bookings' },
+  { value: 'staff', label: 'Staff' },
+  { value: 'services', label: 'Services' },
+  { value: 'settings', label: 'Settings' },
+] as const satisfies readonly { value: Tab; label: string }[];
 
 function useShopId() {
   const { data } = useQuery({
@@ -16,6 +26,27 @@ function useShopId() {
     staleTime: 5 * 60_000,
   });
   return data?.shops[0];
+}
+
+/** Row shell shared by every list in the console. */
+function ListRow({ children }: { children: React.ReactNode }) {
+  return (
+    <li className="inset flex flex-wrap items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm">
+      {children}
+    </li>
+  );
+}
+
+function SectionHeading({ children, hint }: { children: React.ReactNode; hint?: string }) {
+  return (
+    <div className="mb-4 flex items-baseline gap-3">
+      <h3 className="font-display text-lg">{children}</h3>
+      <span className="h-px flex-1" style={{ background: 'var(--line)' }} />
+      {hint && (
+        <span className="text-[0.6875rem] uppercase tracking-[0.14em] text-ivory-dim/65">{hint}</span>
+      )}
+    </div>
+  );
 }
 
 function Overview({ shopId }: { shopId: string }) {
@@ -35,25 +66,62 @@ function Overview({ shopId }: { shopId: string }) {
         utilization: number;
       }>(`/api/v1/admin/analytics?shopId=${shopId}&startDate=${range.start}&endDate=${range.end}`),
   });
-  if (isLoading) return <p className="text-sm text-cream/60">Crunching numbers…</p>;
-  if (!data) return <p className="text-sm text-red-300">Failed to load analytics.</p>;
-  const cards: [string, string][] = [
-    ['Revenue (30d)', peso(data.revenue)],
-    ['Bookings (30d)', String(data.bookings)],
-    ['No-show rate', `${(data.noShowRate * 100).toFixed(1)}%`],
-    ['Chair utilization', `${(data.utilization * 100).toFixed(1)}%`],
+
+  if (isLoading) {
+    return (
+      <div className="grid gap-3 sm:grid-cols-4">
+        {Array.from({ length: 4 }, (_, i) => (
+          <div key={i} className="skeleton h-28 rounded-2xl" />
+        ))}
+        <span className="sr-only">Crunching numbers…</span>
+      </div>
+    );
+  }
+  if (!data)
+    return (
+      <p role="alert" className="text-sm text-ember">
+        Failed to load analytics.
+      </p>
+    );
+
+  const cards: [string, string, string][] = [
+    ['Revenue', peso(data.revenue), 'Last 30 days'],
+    ['Bookings', String(data.bookings), 'Last 30 days'],
+    ['No-show rate', `${(data.noShowRate * 100).toFixed(1)}%`, 'Lower is better'],
+    ['Chair utilization', `${(data.utilization * 100).toFixed(1)}%`, 'Of bookable hours'],
   ];
+
   return (
-    <div className="grid gap-3 sm:grid-cols-4">
-      {cards.map(([label, value]) => (
-        <div key={label} className="rounded border border-cream/10 bg-pine-950 p-4">
-          <p className="text-xs tracking-widest text-cream/50">{label.toUpperCase()}</p>
-          <p className="font-display text-2xl">{value}</p>
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {cards.map(([label, value, hint]) => (
+        <div key={label} className="inset rounded-2xl px-5 py-5">
+          <p className="text-[0.625rem] font-semibold uppercase tracking-[0.16em] text-ivory-dim/65">
+            {label}
+          </p>
+          <p className="font-display mt-2.5 text-3xl text-brass-200" data-numeric>
+            {value}
+          </p>
+          <p className="mt-1 text-xs text-ivory-dim/70">{hint}</p>
         </div>
       ))}
-      <div className="rounded border border-cream/10 bg-pine-950 p-4 sm:col-span-4">
-        <p className="text-xs tracking-widest text-cream/50">BY STATUS</p>
-        <p className="text-sm">{Object.entries(data.byStatus).map(([k, v]) => `${k}: ${v}`).join(' · ') || '—'}</p>
+      <div className="inset rounded-2xl px-5 py-5 sm:col-span-2 lg:col-span-4">
+        <p className="text-[0.625rem] font-semibold uppercase tracking-[0.16em] text-ivory-dim/65">
+          By status
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {Object.entries(data.byStatus).length === 0 ? (
+            <span className="muted text-sm">—</span>
+          ) : (
+            Object.entries(data.byStatus).map(([k, v]) => (
+              <span key={k} className="badge-quiet">
+                {k}
+                <span className="text-brass-300" data-numeric>
+                  {v}
+                </span>
+              </span>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );
@@ -76,23 +144,43 @@ function Bookings({ shopId }: { shopId: string }) {
   }
   return (
     <div>
-      <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="field mb-3 text-sm" />
+      <SectionHeading hint={`${data?.bookings.length ?? 0} on the day`}>Day sheet</SectionHeading>
+      <label className="mb-5 block max-w-56">
+        <span className="mb-2 block text-[0.6875rem] uppercase tracking-[0.14em] text-ivory-dim/70">
+          Date
+        </span>
+        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="field" />
+      </label>
       <ul className="grid gap-2">
         {(data?.bookings ?? []).map((b) => (
-          <li key={b.id} className="flex items-center justify-between gap-2 rounded border border-cream/10 bg-pine-950 px-3 py-2 text-sm">
-            <span>
-              {new Date(b.startAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} · {b.service.name} · {b.customer.firstName} (w/ {b.staff.user.firstName})
+          <ListRow key={b.id}>
+            <span className="flex min-w-0 items-center gap-3">
+              <span className="font-display shrink-0 text-base text-brass-200" data-numeric>
+                {new Date(b.startAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate font-medium">{b.service.name}</span>
+                <span className="block truncate text-xs text-ivory-dim/75">
+                  {b.customer.firstName} · with {b.staff.user.firstName}
+                </span>
+              </span>
             </span>
-            <span className="flex items-center gap-2">
-              <span className="text-cream/60">{b.status}</span>
+            <span className="flex shrink-0 items-center gap-2">
+              <span className="badge-quiet">{b.status}</span>
               {(b.status === 'pending' || b.status === 'confirmed') && (
-                <button onClick={() => cancel(b.id)} className="rounded border border-cream/20 px-2 py-0.5 text-xs hover:bg-cream/10">Cancel</button>
+                <button onClick={() => cancel(b.id)} className="btn-quiet">
+                  Cancel
+                </button>
               )}
             </span>
-          </li>
+          </ListRow>
         ))}
       </ul>
-      {!data?.bookings.length && <p className="text-sm text-cream/60">No bookings this day.</p>}
+      {!data?.bookings.length && (
+        <div className="inset rounded-xl px-4 py-10 text-center">
+          <p className="muted text-sm">No bookings this day.</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -127,37 +215,83 @@ function Staff({ shopId }: { shopId: string }) {
     queryClient.invalidateQueries({ queryKey: ['admin-timeoff'] });
   }
 
+  const pending = (timeOffQ.data?.timeOff ?? []).filter((t) => t.status === 'pending');
+
   return (
-    <div className="grid gap-6">
-      {error && <p className="text-sm text-red-300">{error}</p>}
+    <div className="grid gap-10">
+      {error && (
+        <p role="alert" className="text-sm text-ember">
+          {error}
+        </p>
+      )}
       <div>
-        <h3 className="mb-2 font-medium">Roster</h3>
+        <SectionHeading hint={`${staffQ.data?.staff.length ?? 0} on the roster`}>Roster</SectionHeading>
         <ul className="grid gap-2">
           {(staffQ.data?.staff ?? []).map((s) => (
-            <li key={s.id} className="flex items-center justify-between gap-2 rounded border border-cream/10 bg-pine-950 px-3 py-2 text-sm">
-              <span>{s.user.firstName} {s.user.lastName} · {s.title ?? '—'} · {s.isActive ? 'active' : 'inactive'} · {Number(s.commissionRate)}% comm.</span>
-              {s.isActive && (
-                <button onClick={() => deactivate(s.id)} className="rounded border border-cream/20 px-2 py-0.5 text-xs hover:bg-cream/10">Deactivate</button>
-              )}
-            </li>
+            <ListRow key={s.id}>
+              <span className="flex min-w-0 items-center gap-3">
+                <span
+                  className="font-display flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm text-brass-300"
+                  style={{
+                    background: 'rgb(196 160 72 / 0.13)',
+                    boxShadow: 'inset 0 0 0 1px rgb(196 160 72 / 0.26)',
+                  }}
+                  aria-hidden
+                >
+                  {s.user.firstName.charAt(0)}
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate font-medium">
+                    {s.user.firstName} {s.user.lastName}
+                  </span>
+                  <span className="block truncate text-xs text-ivory-dim/75">
+                    {s.title ?? '—'} · <span data-numeric>{Number(s.commissionRate)}%</span> commission
+                  </span>
+                </span>
+              </span>
+              <span className="flex shrink-0 items-center gap-2">
+                <span className={s.isActive ? 'badge-live' : 'badge-quiet'}>
+                  {s.isActive ? 'active' : 'inactive'}
+                </span>
+                {s.isActive && (
+                  <button onClick={() => deactivate(s.id)} className="btn-quiet">
+                    Deactivate
+                  </button>
+                )}
+              </span>
+            </ListRow>
           ))}
         </ul>
       </div>
+
       <div>
-        <h3 className="mb-2 font-medium">Time-off approvals</h3>
+        <SectionHeading hint={`${pending.length} pending`}>Time-off approvals</SectionHeading>
         <ul className="grid gap-2">
-          {(timeOffQ.data?.timeOff ?? []).filter((t) => t.status === 'pending').map((t) => (
-            <li key={t.id} className="flex items-center justify-between gap-2 rounded border border-cream/10 bg-pine-950 px-3 py-2 text-sm">
-              <span>{t.staff.user.firstName} {t.staff.user.lastName}: {new Date(t.startAt).toLocaleDateString()} → {new Date(t.endAt).toLocaleDateString()}</span>
-              <span className="flex gap-2">
-                <button onClick={() => review(t.id, 'approved')} className="rounded border border-cream/20 px-2 py-0.5 text-xs hover:bg-cream/10">Approve</button>
-                <button onClick={() => review(t.id, 'rejected')} className="rounded border border-cream/20 px-2 py-0.5 text-xs hover:bg-cream/10">Reject</button>
+          {pending.map((t) => (
+            <ListRow key={t.id}>
+              <span className="min-w-0">
+                <span className="block truncate font-medium">
+                  {t.staff.user.firstName} {t.staff.user.lastName}
+                </span>
+                <span className="block text-xs text-ivory-dim/75" data-numeric>
+                  {new Date(t.startAt).toLocaleDateString()} → {new Date(t.endAt).toLocaleDateString()}
+                </span>
               </span>
-            </li>
+              <span className="flex shrink-0 gap-2">
+                <button onClick={() => review(t.id, 'approved')} className="btn-quiet">
+                  <Check size={13} /> Approve
+                </button>
+                <button onClick={() => review(t.id, 'rejected')} className="btn-quiet">
+                  <X size={13} /> Reject
+                </button>
+              </span>
+            </ListRow>
           ))}
         </ul>
-        {(timeOffQ.data?.timeOff ?? []).filter((t) => t.status === 'pending').length === 0 && (
-          <p className="text-sm text-cream/60">Nothing pending.</p>
+        {pending.length === 0 && (
+          <div className="inset rounded-xl px-4 py-8 text-center">
+            <p className="muted text-sm">Nothing pending.</p>
+          </div>
         )}
       </div>
     </div>
@@ -207,24 +341,48 @@ function Services({ shopId }: { shopId: string }) {
   }
 
   return (
-    <div className="grid gap-6">
-      {error && <p className="text-sm text-red-300">{error}</p>}
-      <form onSubmit={create} className="grid gap-2 sm:grid-cols-4">
-        <input placeholder="Name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="field text-sm" />
-        <input placeholder="Price (₱)" required type="number" min="0" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="field text-sm" />
-        <input placeholder="Minutes" required type="number" min="1" value={form.durationMinutes} onChange={(e) => setForm({ ...form, durationMinutes: e.target.value })} className="field text-sm" />
-        <button className="btn-primary text-sm">Add service</button>
-      </form>
-      <ul className="grid gap-2">
-        {(servicesQ.data?.services ?? []).map((s) => (
-          <li key={s.id} className="flex items-center justify-between gap-2 rounded border border-cream/10 bg-pine-950 px-3 py-2 text-sm">
-            <span>{s.name} · {peso(s.price)} · {s.durationMinutes} min · {s.isActive ? 'active' : 'inactive'}</span>
-            <button onClick={() => toggle(s)} className="rounded border border-cream/20 px-2 py-0.5 text-xs hover:bg-cream/10">
-              {s.isActive ? 'Deactivate' : 'Activate'}
-            </button>
-          </li>
-        ))}
-      </ul>
+    <div className="grid gap-10">
+      {error && (
+        <p role="alert" className="text-sm text-ember">
+          {error}
+        </p>
+      )}
+
+      <div>
+        <SectionHeading>Add to the menu</SectionHeading>
+        <form onSubmit={create} className="grid gap-3 sm:grid-cols-[2fr_1fr_1fr_auto]">
+          <input placeholder="Name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="field" />
+          <input placeholder="Price (₱)" required type="number" min="0" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="field" />
+          <input placeholder="Minutes" required type="number" min="1" value={form.durationMinutes} onChange={(e) => setForm({ ...form, durationMinutes: e.target.value })} className="field" />
+          <button className="btn-primary">
+            <Plus size={15} /> Add service
+          </button>
+        </form>
+      </div>
+
+      <div>
+        <SectionHeading hint={`${servicesQ.data?.services.length ?? 0} total`}>The menu</SectionHeading>
+        <ul className="grid gap-2">
+          {(servicesQ.data?.services ?? []).map((s) => (
+            <ListRow key={s.id}>
+              <span className="min-w-0">
+                <span className="block truncate font-medium">{s.name}</span>
+                <span className="block text-xs text-ivory-dim/75" data-numeric>
+                  {peso(s.price)} · {s.durationMinutes} min
+                </span>
+              </span>
+              <span className="flex shrink-0 items-center gap-2">
+                <span className={s.isActive ? 'badge-live' : 'badge-quiet'}>
+                  {s.isActive ? 'active' : 'inactive'}
+                </span>
+                <button onClick={() => toggle(s)} className="btn-quiet">
+                  {s.isActive ? 'Deactivate' : 'Activate'}
+                </button>
+              </span>
+            </ListRow>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
@@ -249,14 +407,35 @@ function Settings({ shopId }: { shopId: string }) {
     setSaved(true);
     queryClient.invalidateQueries({ queryKey: ['shop-info'] });
   }
+
+  const label = 'mb-2 block text-[0.6875rem] uppercase tracking-[0.14em] text-ivory-dim/70';
+
   return (
-    <form onSubmit={save} className="grid max-w-md gap-2">
-      <input placeholder="Shop name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="field text-sm" />
-      <input placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="field text-sm" />
-      <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className="field text-sm" />
-      <button className="btn-primary text-sm">Save settings</button>
-      {saved && <p className="text-sm text-cream/60">Saved.</p>}
-    </form>
+    <div>
+      <SectionHeading>Shop details</SectionHeading>
+      <form onSubmit={save} className="grid max-w-lg gap-4">
+        <label className="block">
+          <span className={label}>Shop name</span>
+          <input placeholder="Shop name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="field" />
+        </label>
+        <label className="block">
+          <span className={label}>Phone</span>
+          <input placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="field" />
+        </label>
+        <label className="block">
+          <span className={label}>Description</span>
+          <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={4} className="field" />
+        </label>
+        <div className="flex items-center gap-3">
+          <button className="btn-primary">Save settings</button>
+          {saved && (
+            <span className="flex items-center gap-1.5 text-sm text-sage">
+              <Check size={15} /> Saved
+            </span>
+          )}
+        </div>
+      </form>
+    </div>
   );
 }
 
@@ -266,36 +445,35 @@ export default function AdminPage() {
   const [tab, setTab] = useState<Tab>('overview');
   const shop = useShopId();
 
-  if (!ready) return <p className="text-cream/60">Loading…</p>;
+  if (!ready) return <div className="skeleton h-64 rounded-2xl" />;
   if (!user) {
     router.push('/login');
-    return <p className="text-cream/60">Redirecting…</p>;
+    return <div className="skeleton h-64 rounded-2xl" />;
   }
   if (user.role !== 'admin' && user.role !== 'super_admin') {
-    return <p className="text-red-300">Admin only.</p>;
+    return (
+      <div className="card mx-auto max-w-md text-center">
+        <h1 className="font-display text-2xl">Admin only</h1>
+        <p className="muted mt-2 text-sm">This console is restricted to shop administrators.</p>
+      </div>
+    );
   }
-
-  const tabs: Tab[] = ['overview', 'bookings', 'staff', 'services', 'settings'];
 
   return (
     <div>
-      <p className="text-xs font-semibold tracking-widest text-copper-200">THE OFFICE</p>
-      <h1 className="font-display mb-4 text-3xl">Admin dashboard</h1>
-      <div className="mb-6 flex flex-wrap gap-2">
-        {tabs.map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`rounded px-3 py-1.5 text-sm font-medium ${tab === t ? 'bg-copper-600 text-cream' : 'border border-cream/20 hover:bg-cream/10'}`}
-          >
-            {t}
-          </button>
-        ))}
+      <div className="flex flex-wrap items-end justify-between gap-5">
+        <div>
+          <p className="eyebrow">The office</p>
+          <h1 className="font-display mt-3 text-4xl sm:text-5xl">Admin dashboard</h1>
+          {shop && <p className="muted mt-2 text-sm">{shop.name}</p>}
+        </div>
+        <Tabs tabs={TABS} value={tab} onChange={setTab} label="Admin sections" />
       </div>
+
       {!shop ? (
-        <p className="text-sm text-cream/60">Loading shop…</p>
+        <div className="skeleton mt-8 h-64 rounded-2xl" />
       ) : (
-        <section className="card">
+        <section className="card mt-8 p-6 sm:p-7">
           {tab === 'overview' && <Overview shopId={shop.id} />}
           {tab === 'bookings' && <Bookings shopId={shop.id} />}
           {tab === 'staff' && <Staff shopId={shop.id} />}

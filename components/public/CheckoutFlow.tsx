@@ -7,9 +7,10 @@ import { useAuthStore } from '@/stores/authStore';
 import { apiJson } from '@/lib/api-client';
 import { depositFor, peso } from '@/lib/format';
 import type { Booking, StaffMember } from '@/lib/types';
-import { ArrowRight, CalendarClock, ClipboardCheck, Scissors } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CalendarClock, Check, ClipboardCheck, Scissors } from 'lucide-react';
 import { BarberServicePicker } from './BarberServicePicker';
 import { SlotPicker } from './SlotPicker';
+
 const steps = [
   { key: 'service', label: 'Barber & Service', Icon: Scissors },
   { key: 'slot', label: 'Time', Icon: CalendarClock },
@@ -17,6 +18,94 @@ const steps = [
 ] as const;
 
 const stepIndex = (s: string) => (s === 'service' ? 0 : s === 'slot' ? 1 : 2);
+
+function StepRail({ current }: { current: number }) {
+  return (
+    <ol className="mb-8 flex items-center gap-2 sm:gap-4">
+      {steps.map(({ key, label, Icon }, i) => {
+        const state = i === current ? 'current' : i < current ? 'done' : 'todo';
+        return (
+          <li key={key} className="flex min-w-0 flex-1 items-center gap-2 sm:gap-4">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <span
+                aria-hidden
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-[background-color,box-shadow,color] duration-250 ease-[cubic-bezier(0.23,1,0.32,1)] ${
+                  state === 'current'
+                    ? 'text-ink-950'
+                    : state === 'done'
+                      ? 'text-brass-300'
+                      : 'text-ivory-dim/55'
+                }`}
+                style={
+                  state === 'current'
+                    ? {
+                        background:
+                          'linear-gradient(180deg, var(--color-brass-400), var(--color-brass-500))',
+                        boxShadow: 'var(--glow-brass)',
+                      }
+                    : {
+                        background: state === 'done' ? 'rgb(196 160 72 / 0.14)' : 'transparent',
+                        boxShadow: `inset 0 0 0 1px ${
+                          state === 'done' ? 'rgb(196 160 72 / 0.3)' : 'var(--line)'
+                        }`,
+                      }
+                }
+              >
+                {state === 'done' ? <Check size={16} /> : <Icon size={16} />}
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[0.625rem] uppercase tracking-[0.16em] text-ivory-dim/60">
+                  Step {i + 1}
+                </span>
+                <span
+                  className={`hidden truncate text-sm font-medium sm:block ${
+                    state === 'todo' ? 'text-ivory-dim/70' : 'text-ivory'
+                  }`}
+                >
+                  {label}
+                </span>
+              </span>
+            </div>
+            {i < steps.length - 1 && (
+              <span
+                aria-hidden
+                className="h-px min-w-4 flex-1 origin-left transition-colors duration-250"
+                style={{
+                  background: i < current ? 'var(--color-brass-500)' : 'var(--line-strong)',
+                }}
+              />
+            )}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+function TicketRow({
+  label,
+  value,
+  accent = false,
+  total = false,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+  total?: boolean;
+}) {
+  return (
+    <div className={`flex items-baseline gap-3 ${total ? 'pt-3' : ''}`} style={total ? { borderTop: '1px solid var(--line)' } : undefined}>
+      <dt className="text-sm text-ivory-dim">{label}</dt>
+      <span className="mb-1 h-px flex-1 border-b border-dotted border-ivory/15" />
+      <dd
+        className={`shrink-0 text-sm font-medium ${accent ? 'text-brass-300' : 'text-ivory'}`}
+        data-numeric
+      >
+        {value}
+      </dd>
+    </div>
+  );
+}
 
 export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: string; shopName: string; initialStaffId?: string }) {
   const router = useRouter();
@@ -106,27 +195,21 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
   const canContinueDetails = !!service && !!staff;
   const canContinueSlot = !!slot;
 
-  return (
-    <div>
-      <p className="text-xs font-semibold tracking-widest text-copper-200">BOOKING — {shopName.toUpperCase()}</p>
-      <h1 className="font-display mb-3 text-2xl">Take a chair in three steps</h1>
+  const price = staff?.services?.find((x) => x.service.id === service?.id)?.customPrice ?? service?.price;
 
-      <ol className="mb-4 flex flex-wrap gap-2 text-sm">
-        {steps.map(({ key, label, Icon }, i) => (
-          <li
-            key={key}
-            className={`flex items-center gap-1.5 rounded px-3 py-1 ${
-              stepIndex(step) === i
-                ? 'bg-pine-900 font-medium text-cream'
-                : stepIndex(step) > i
-                  ? 'bg-copper-600/15 text-copper-200'
-                  : 'bg-cream/5 text-cream/60'
-            }`}
-          >
-            <Icon size={15} /> {label}
-          </li>
-        ))}
-      </ol>
+  const errorNote = error && (
+    <p role="alert" className="mt-4 flex items-start gap-2 text-sm text-ember">
+      <span aria-hidden className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-ember" />
+      {error}
+    </p>
+  );
+
+  return (
+    <div className="mx-auto max-w-4xl">
+      <p className="eyebrow">Booking · {shopName}</p>
+      <h1 className="font-display mt-3 mb-8 text-4xl sm:text-5xl">Take a chair in three steps</h1>
+
+      <StepRail current={stepIndex(step)} />
 
       {step === 'service' && (
         <div>
@@ -142,8 +225,8 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
             }}
             onSelectStaff={setStaff}
           />
-          {error && <p className="mt-3 text-sm text-red-300">{error}</p>}
-          <div className="mt-3">
+          {errorNote}
+          <div className="mt-6">
             <button
               onClick={() => {
                 if (!canContinueDetails) {
@@ -152,13 +235,14 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
                 }
                 go('slot');
               }}
-              className="btn-primary flex items-center gap-1.5"
+              className="btn-primary"
             >
               Continue <ArrowRight size={15} />
             </button>
           </div>
         </div>
       )}
+
       {step === 'slot' && service && staff && (
         <>
           <SlotPicker
@@ -169,10 +253,10 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
             selected={slot}
             onSelect={setSlot}
           />
-          {error && <p className="mt-3 text-sm text-red-300">{error}</p>}
-          <div className="mt-4 flex gap-2">
+          {errorNote}
+          <div className="mt-6 flex gap-3">
             <button onClick={() => go('service')} className="btn-ghost">
-              ← Back
+              <ArrowLeft size={15} /> Back
             </button>
             <button
               onClick={() => {
@@ -182,46 +266,105 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
                 }
                 go('checkout');
               }}
-              className="btn-primary flex items-center gap-1.5"
+              className="btn-primary"
             >
               Continue <ArrowRight size={15} />
             </button>
           </div>
         </>
       )}
+
       {step === 'checkout' && service && staff && slot && (
-        <div className="card">
-          <h2 className="font-display mb-2 text-xl">The ticket</h2>
-          <dl className="mb-4 grid gap-1 text-sm">
-            <div className="flex justify-between"><dt className="text-cream/60">Cut</dt><dd className="font-medium">{service.name}</dd></div>
-            <div className="flex justify-between"><dt className="text-cream/60">Barber</dt><dd className="font-medium">{staff.user.firstName} {staff.user.lastName}</dd></div>
-            <div className="flex justify-between"><dt className="text-cream/60">Chair time</dt><dd className="font-medium">{new Date(slot.startTime).toLocaleString()}</dd></div>
-            <div className="flex justify-between border-t border-cream/10 pt-1"><dt className="text-cream/60">Total</dt><dd className="font-medium">{peso(staff.services?.find((x) => x.service.id === service.id)?.customPrice ?? service.price)}</dd></div>
-            <div className="flex justify-between"><dt className="text-cream/60">Downpayment due</dt><dd className="font-medium text-copper-200">{peso(depositFor(Number(staff.services?.find((x) => x.service.id === service.id)?.customPrice ?? service.price)))}</dd></div>
-          </dl>
-          {!user && (
-            <div className="mb-4 grid gap-2">
-              <p className="text-sm text-cream/60">Checking out as a guest — just your name and number:</p>
-              <div className="grid grid-cols-2 gap-2">
-                <input placeholder="First name" value={guest.firstName} onChange={(e) => setGuest({ ...guest, firstName: e.target.value })} className="field" />
-                <input placeholder="Last name" value={guest.lastName} onChange={(e) => setGuest({ ...guest, lastName: e.target.value })} className="field" />
-              </div>
-              <input placeholder="Phone number" type="tel" value={guest.phone} onChange={(e) => setGuest({ ...guest, phone: e.target.value })} className="field" />
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+          {/* Guest details + notes */}
+          <div className="card order-2 lg:order-1">
+            <h2 className="font-display text-xl">Your details</h2>
+            {!user ? (
+              <>
+                <p className="muted mt-1.5 text-sm">
+                  Checking out as a guest — just your name and number, no password.
+                </p>
+                <div className="mt-5 grid gap-3">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <input
+                      placeholder="First name"
+                      value={guest.firstName}
+                      onChange={(e) => setGuest({ ...guest, firstName: e.target.value })}
+                      className="field"
+                    />
+                    <input
+                      placeholder="Last name"
+                      value={guest.lastName}
+                      onChange={(e) => setGuest({ ...guest, lastName: e.target.value })}
+                      className="field"
+                    />
+                  </div>
+                  <input
+                    placeholder="Phone number"
+                    type="tel"
+                    value={guest.phone}
+                    onChange={(e) => setGuest({ ...guest, phone: e.target.value })}
+                    className="field"
+                  />
+                </div>
+              </>
+            ) : (
+              <p className="muted mt-1.5 text-sm">
+                Booking as {user.firstName} {user.lastName}.
+              </p>
+            )}
+
+            <label className="mt-5 block">
+              <span className="text-sm text-ivory-dim">Notes for the barber (optional)</span>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+                className="field mt-2 block"
+              />
+            </label>
+
+            {errorNote}
+
+            <div className="mt-6 flex gap-3">
+              <button onClick={() => go('slot')} className="btn-ghost">
+                <ArrowLeft size={15} /> Back
+              </button>
+              <button onClick={confirmBooking} disabled={submitting} className="btn-primary">
+                {submitting ? 'Reserving…' : 'Reserve my chair'}
+              </button>
             </div>
-          )}
-          <label className="mb-4 block text-sm">
-            <span className="text-cream/60">Notes for the barber (optional)</span>
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="field mt-1 block w-full" />
-          </label>
-          {error && <p className="mb-3 text-sm text-red-300">{error}</p>}
-          <div className="flex gap-2">
-            <button onClick={() => go('slot')} className="btn-ghost">
-              ← Back
-            </button>
-            <button onClick={confirmBooking} disabled={submitting} className="btn-primary">
-              {submitting ? 'Reserving…' : 'Reserve my chair'}
-            </button>
           </div>
+
+          {/* The ticket */}
+          <aside className="card order-1 h-fit lg:order-2 lg:sticky lg:top-24">
+            <p className="eyebrow">The ticket</p>
+            <h2 className="font-display mt-2.5 text-2xl">{service.name}</h2>
+            <p className="muted mt-1 text-sm">
+              with {staff.user.firstName} {staff.user.lastName}
+            </p>
+
+            <dl className="mt-5 grid gap-2.5">
+              <TicketRow
+                label="Chair time"
+                value={new Date(slot.startTime).toLocaleString([], {
+                  weekday: 'short',
+                  month: 'short',
+                  day: 'numeric',
+                  hour: 'numeric',
+                  minute: '2-digit',
+                })}
+              />
+              <TicketRow label="Duration" value={`${service.durationMinutes} min`} />
+              <TicketRow label="Total" value={peso(price!)} total />
+              <TicketRow label="Downpayment due" value={peso(depositFor(Number(price)))} accent />
+            </dl>
+
+            <p className="muted mt-5 text-xs leading-relaxed">
+              The balance is settled at the chair. Reschedule or release the chair any time from
+              your dashboard.
+            </p>
+          </aside>
         </div>
       )}
     </div>

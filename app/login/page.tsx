@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -23,10 +24,12 @@ export default function LoginPage() {
   });
 
   return (
-    <div className="mx-auto max-w-sm">
-      <div className="card">
-        <h1 className="font-display mb-1 text-2xl">Welcome back</h1>
-        <p className="mb-4 text-sm text-cream/60">Your chairs are waiting.</p>
+    <div className="mx-auto mt-10 max-w-md">
+      <div className="card px-7 py-9">
+        <p className="eyebrow">Members</p>
+        <h1 className="font-display mt-3 text-4xl">Welcome back</h1>
+        <p className="muted mt-2 text-sm">Your chairs are waiting.</p>
+
         <form
           onSubmit={handleSubmit(async (values) => {
             setError(null);
@@ -41,13 +44,35 @@ export default function LoginPage() {
               setError((e as Error).message);
             }
           })}
-          className="grid gap-3"
+          className="mt-7 grid gap-4"
         >
-          <input {...register('email')} type="email" placeholder="Email" className="field" />
-          <input {...register('password')} type="password" placeholder="Password" className="field" />
-          {error && <p className="text-sm text-red-300">{error}</p>}
-          <button className="btn-primary">Sign in</button>
+          <label className="grid gap-2">
+            <span className="text-xs font-medium uppercase tracking-[0.14em] text-ivory-dim/75">
+              Email
+            </span>
+            <input {...register('email')} type="email" placeholder="you@example.com" className="field" />
+          </label>
+          <label className="grid gap-2">
+            <span className="text-xs font-medium uppercase tracking-[0.14em] text-ivory-dim/75">
+              Password
+            </span>
+            <input {...register('password')} type="password" placeholder="••••••••" className="field" />
+          </label>
+          {error && (
+            <p role="alert" className="text-sm text-ember">
+              {error}
+            </p>
+          )}
+          <button className="btn-primary mt-1 py-3">Sign in</button>
         </form>
+
+        <div className="rule-fade my-7" />
+        <p className="text-center text-sm text-ivory-dim">
+          No account yet?{' '}
+          <Link href="/register" className="font-medium text-brass-300 hover:text-brass-200">
+            Open one
+          </Link>
+        </p>
       </div>
     </div>
   );
