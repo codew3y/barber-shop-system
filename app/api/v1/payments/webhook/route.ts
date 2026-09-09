@@ -1,15 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { verifyWebhookSignature } from '@/lib/stripe';
+import { verifyWebhookSignature, type PmWebhookEvent } from '@/lib/paymongo';
 import { queueBookingNotifications } from '@/services/notificationService';
 
+async function findPayment(event: PmWebhookEvent) {
+  // Primary: match by intent id stored at create-intent time.
+  if (event.intentId) {
+    const byIntent = await prisma.payment.findFirst({
+      where: { providerRef: event.intentId },
+    });
+    if (byIntent) return byIntent;
+  }
+  // Fallback: booking id echoed in intent metadata.
+  if (event.bookingId) {
+    const byBooking = await prisma.payment.findFirst({
+      where: {
+        bookingId: event.bookingId,
+        provider: 'paymongo',
+        status: { in: ['pending', 'processing'] },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (byBooking) return byBooking;
+  }
+  return null;
+}
+
 export async function POST(req: NextRequest) {
-  const signature = req.headers.get('stripe-signature');
+  const signature = req.headers.get('paymongo-signature');
   if (!signature) {
     return NextResponse.json({ error: 'Missing signature' }, { status: 400 });
   }
 
-  let event;
+  let event: PmWebhookEvent;
   try {
     const payload = await req.text();
     event = verifyWebhookSignature(payload, signature);
@@ -17,12 +40,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
-  // Idempotent: Stripe may redeliver events.
-  if (event.type === 'payment_intent.succeeded') {
-    const intent = event.data.object as { id: string; metadata?: Record<string, string> };
-    const payment = await prisma.payment.findFirst({ where: { providerRef: intent.id } });
+  // Idempotent: PayMongo may redeliver events.
+  if (event.type === 'payment.paid') {
+    const payment = await findPayment(event);
     if (payment && payment.status !== 'completed') {
-      await prisma.payment.update({ where: { id: payment.id }, data: { status: 'completed' } });
+      await prisma.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: 'completed',
+          ...(event.paymentId ? { providerChargeId: event.paymentId } : {}),
+        },
+      });
       const booking = await prisma.booking.findUnique({ where: { id: payment.bookingId } });
       if (booking && booking.status === 'pending') {
         await prisma.booking.update({
@@ -32,10 +60,9 @@ export async function POST(req: NextRequest) {
         void queueBookingNotifications(booking.id, 'booking_confirmed');
       }
     }
-  } else if (event.type === 'payment_intent.payment_failed') {
-    const intent = event.data.object as { id: string };
-    const payment = await prisma.payment.findFirst({ where: { providerRef: intent.id } });
-    if (payment && payment.status !== 'failed') {
+  } else if (event.type === 'payment.failed' || event.type === 'qrph.expired') {
+    const payment = await findPayment(event);
+    if (payment && (payment.status === 'pending' || payment.status === 'processing')) {
       await prisma.payment.update({ where: { id: payment.id }, data: { status: 'failed' } });
     }
   }

@@ -25,13 +25,20 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: 'Validation failed', details: parsed.error.flatten() }, { status: 400 });
   }
-  const { firstName, lastName, phone } = parsed.data;
+  const { firstName, lastName, phone, email: providedEmail } = parsed.data;
 
   const digits = phone.replace(/\D/g, '');
-  const email = `guest.${digits}@barberhouse.local`;
-  const existing = await prisma.user.findFirst({ where: { OR: [{ email }, { phone }] } });
+  const email = providedEmail ?? `guest.${digits}@barberhouse.local`;
+  const existing = await prisma.user.findFirst({
+    where: { OR: [{ email }, { phone }] },
+  });
   if (existing) {
-    return jsonError('This number is already registered — please log in instead', 409);
+    return jsonError(
+      providedEmail
+        ? 'This email or number is already registered — please log in instead'
+        : 'This number is already registered — please log in instead',
+      409
+    );
   }
 
   const passwordHash = await hashPassword(randomBytes(24).toString('hex'));

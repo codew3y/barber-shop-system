@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth, jsonError } from '@/lib/api';
 import { rateLimit } from '@/lib/rate-limit';
-import { createIntent, stripeConfigured } from '@/lib/stripe';
+import { createQrIntent, paymongoConfigured } from '@/lib/paymongo';
 import { createIntentSchema } from '@/schemas/payment';
 
 async function effectivePrice(booking: { staffId: string; serviceId: string; service: { price: unknown } }): Promise<number> {
@@ -46,19 +46,23 @@ export async function POST(req: NextRequest) {
   const amount =
     parsed.data.type === 'deposit' ? Math.round(price * (depositPercent / 100) * 100) / 100 : price;
 
-  if (!stripeConfigured()) {
+  if (!paymongoConfigured()) {
     return NextResponse.json(
       { error: 'Payments not configured yet — pay at the shop', configured: false },
       { status: 503 }
     );
   }
 
-  const intent = await createIntent({
-    amountPesos: amount,
-    currency: 'php',
-    metadata: { bookingId: booking.id, type: parsed.data.type, customerId: auth.user.id },
-  });
-  if (!intent) return jsonError('Payment provider error', 502);
+  let qr: { intentId: string; clientKey: string; qrImageUrl: string };
+  try {
+    qr = await createQrIntent({
+      amountPesos: amount,
+      description: `BarberHouse booking ${booking.id}`,
+      metadata: { bookingId: booking.id, type: parsed.data.type, customerId: auth.user.id },
+    });
+  } catch (err) {
+    return jsonError(err instanceof Error ? err.message : 'Payment provider error', 502);
+  }
 
   const payment = await prisma.payment.create({
     data: {
@@ -67,12 +71,17 @@ export async function POST(req: NextRequest) {
       currency: 'PHP',
       status: 'processing',
       type: parsed.data.type,
-      provider: 'stripe',
-      providerRef: intent.intentId,
+      provider: 'paymongo',
+      providerRef: qr.intentId,
     },
   });
   return NextResponse.json(
-    { clientSecret: intent.clientSecret, paymentId: payment.id, amount: amount.toFixed(2) },
+    {
+      qrImageUrl: qr.qrImageUrl,
+      intentId: qr.intentId,
+      paymentId: payment.id,
+      amount: amount.toFixed(2),
+    },
     { status: 201 }
   );
 }

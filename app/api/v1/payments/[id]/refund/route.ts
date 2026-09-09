@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireRole, jsonError } from '@/lib/api';
 import { isShopAdmin } from '@/lib/staff-scope';
-import { createRefund } from '@/lib/stripe';
+import { createRefund, resolvePaymentId } from '@/lib/paymongo';
 import { refundSchema } from '@/schemas/payment';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -33,12 +33,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return jsonError(`Cannot refund a ${payment.status} payment`, 400);
   }
   if (!payment.providerRef) return jsonError('No provider reference', 400);
+  if (payment.provider !== 'paymongo') {
+    return jsonError('Legacy provider — refund from the dashboard', 400);
+  }
   if (parsed.data.amount && parsed.data.amount > Number(payment.amount)) {
     return jsonError('Refund exceeds payment amount', 400);
   }
 
+  // Refunds target the PayMongo payment (pay_*), captured from the webhook.
+  // Fall back to resolving it from the intent if the webhook hasn't landed.
+  const paymongoPaymentId =
+    payment.providerChargeId ??
+    (await resolvePaymentId(payment.providerRef).catch(() => null));
+  if (!paymongoPaymentId) return jsonError('Payment not yet settled at provider', 409);
+
   try {
-    await createRefund(payment.providerRef, parsed.data.amount);
+    await createRefund({ paymentId: paymongoPaymentId, amountPesos: parsed.data.amount });
   } catch (err) {
     return jsonError(err instanceof Error ? err.message : 'Refund failed', 502);
   }

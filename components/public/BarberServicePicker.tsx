@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Check } from 'lucide-react';
 import { apiJson } from '@/lib/api-client';
-import { peso } from '@/lib/format';
+import { depositFor, peso } from '@/lib/format';
 import type { Service, StaffMember } from '@/lib/types';
 
 function offeredIds(staff: StaffMember | null | undefined): string[] {
@@ -124,6 +124,7 @@ export function BarberServicePicker({
               const mine = staff
                 ? ((staff.services ?? []).find((x) => x.service.id === s.id)?.customPrice ?? s.price)
                 : s.price;
+              const downBase = staff ? mine : (s.minPrice ?? s.price);
               return (
                 <button
                   key={s.id}
@@ -146,7 +147,9 @@ export function BarberServicePicker({
                     </span>
                   </span>
                   <span className="mt-1 block text-xs text-ivory-dim/75" data-numeric>
-                    {unavailable ? 'Unavailable for this barber' : `${s.durationMinutes} min`}
+                    {unavailable
+                      ? 'Unavailable for this barber'
+                      : `${s.durationMinutes} min · ${peso(depositFor(Number(downBase)))} downpayment`}
                   </span>
                 </button>
               );
