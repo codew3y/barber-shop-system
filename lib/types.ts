@@ -21,6 +21,8 @@ export interface Service {
   bufferMinutes: number;
   category: string | null;
   priceRange?: string;
+  minPrice?: number;
+  maxPrice?: number;
 }
 
 export interface StaffMember {

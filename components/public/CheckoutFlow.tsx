@@ -8,10 +8,10 @@ import { apiJson } from '@/lib/api-client';
 import { depositFor, peso } from '@/lib/format';
 import { toast } from 'sonner';
 import type { Booking, StaffMember } from '@/lib/types';
-import { ArrowLeft, ArrowRight, CalendarClock, Check, ClipboardCheck, Scissors } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CalendarClock, Check, ClipboardCheck, QrCode, Scissors } from 'lucide-react';
 import { BarberServicePicker } from './BarberServicePicker';
 import { SlotPicker } from './SlotPicker';
-import { StripePayment, stripeEnabled } from './PaymentForm';
+import { QrPay } from './QrPay';
 
 const steps = [
   { key: 'service', label: 'Barber & Service', Icon: Scissors },
@@ -118,7 +118,7 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
   const [guest, setGuest] = useState({ firstName: '', lastName: '', phone: '', email: '' });
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [payment, setPayment] = useState<{ bookingId: string; clientSecret: string; amount: number } | null>(null);
+  const [payment, setPayment] = useState<{ bookingId: string; amount: number; reference: string } | null>(null);
   const paymentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -173,8 +173,7 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
     }
   }
 
-  // Reserve the chair, then collect the downpayment through Stripe.
-  // Without Stripe keys the chair is simply held for shop payment.
+  // Reserve the chair, then collect the downpayment over QRPh.
   async function proceedToPayment() {
     if (!service || !staff || !slot) return;
     setError(null);
@@ -196,25 +195,11 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
         }
       );
       const bookingId = bookingData.booking.id;
-      if (!stripeEnabled()) {
-        finishReserve(bookingId, 'Chair reserved — pay at the shop.');
-        return;
-      }
-      const intent = await apiJson<{ clientSecret: string; amount: string }>(
-        '/api/v1/payments/create-intent',
-        {
-          method: 'POST',
-          body: JSON.stringify({ bookingId, type: 'deposit' }),
-        }
-      ).catch((e) => {
-        if ((e as Error).message.includes('not configured')) return null;
-        throw e;
+      const qr = await apiJson<{ amount: string; reference: string }>('/api/v1/payments/qr', {
+        method: 'POST',
+        body: JSON.stringify({ bookingId, type: 'deposit' }),
       });
-      if (!intent) {
-        finishReserve(bookingId, 'Chair reserved — card payments are offline, pay at the shop.');
-        return;
-      }
-      setPayment({ bookingId, clientSecret: intent.clientSecret, amount: Number(intent.amount) });
+      setPayment({ bookingId, amount: Number(qr.amount), reference: qr.reference });
     } catch (e) {
       const message = (e as Error).message;
       setError(message);
@@ -379,12 +364,16 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
 
             {payment ? (
               <div className="mt-6" ref={paymentRef}>
-                <p className="eyebrow mb-3">Downpayment · {peso(payment.amount)}</p>
-                <StripePayment
-                  clientSecret={payment.clientSecret}
+                <QrPay
                   amount={payment.amount}
+                  reference={payment.reference}
                   onBack={() => setPayment(null)}
-                  onPaid={() => finishReserve(payment.bookingId, 'Downpayment paid — chair secured.')}
+                  onPaid={() =>
+                    finishReserve(
+                      payment.bookingId,
+                      `Payment noted (${payment.reference}) — show it at the shop.`
+                    )
+                  }
                 />
               </div>
             ) : (
@@ -393,7 +382,13 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
                   <ArrowLeft size={15} /> Back
                 </button>
                 <button onClick={proceedToPayment} disabled={submitting} className="btn-primary">
-                  {submitting ? 'Reserving…' : 'Proceed to payment'}
+                  {submitting ? (
+                    'Reserving…'
+                  ) : (
+                    <>
+                      <QrCode size={15} /> Scan QRPh for payment
+                    </>
+                  )}
                 </button>
               </div>
             )}
@@ -424,8 +419,8 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
             </dl>
 
             <p className="muted mt-5 text-xs leading-relaxed">
-              The balance is settled at the chair. Reschedule or release the chair any time from
-              your dashboard.
+              Downpayments are non-refundable. The balance is settled at the chair. Reschedule
+              or release the chair any time from your dashboard.
             </p>
           </aside>
         </div>
