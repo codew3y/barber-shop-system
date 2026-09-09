@@ -61,5 +61,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ book
       newValue: { status: parsed.data.status },
     },
   });
+  // Manual-payment acknowledgment: the confirmation email goes out now
+  // (PayMongo path sends it from the webhook instead).
+  if (parsed.data.status === 'confirmed' && booking.status === 'pending') {
+    const { queueBookingNotifications } = await import('@/services/notificationService');
+    void queueBookingNotifications(bookingId, 'booking_confirmed');
+  }
   return NextResponse.json({ booking: updated });
 }
