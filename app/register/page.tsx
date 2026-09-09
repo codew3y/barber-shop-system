@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,6 +17,8 @@ const schema = z.object({
   password: z.string().min(8),
 });
 
+const labelClass = 'text-xs font-medium uppercase tracking-[0.14em] text-ivory-dim/75';
+
 export default function RegisterPage() {
   const router = useRouter();
   const setSession = useAuthStore((s) => s.setSession);
@@ -25,10 +28,12 @@ export default function RegisterPage() {
   });
 
   return (
-    <div className="mx-auto max-w-sm">
-      <div className="card">
-        <h1 className="font-display mb-1 text-2xl">Join the house</h1>
-        <p className="mb-4 text-sm text-cream/60">One account, every chair in the catalog.</p>
+    <div className="mx-auto mt-10 max-w-md">
+      <div className="card px-7 py-9">
+        <p className="eyebrow">Membership</p>
+        <h1 className="font-display mt-3 text-4xl">Join the house</h1>
+        <p className="muted mt-2 text-sm">One account, every chair in the catalog.</p>
+
         <form
           onSubmit={handleSubmit(async (values) => {
             setError(null);
@@ -43,17 +48,46 @@ export default function RegisterPage() {
               setError((e as Error).message);
             }
           })}
-          className="grid gap-3"
+          className="mt-7 grid gap-4"
         >
           <div className="grid grid-cols-2 gap-3">
-            <input {...register('firstName')} placeholder="First name" className="field" />
-            <input {...register('lastName')} placeholder="Last name" className="field" />
+            <label className="grid gap-2">
+              <span className={labelClass}>First name</span>
+              <input {...register('firstName')} placeholder="First name" className="field" />
+            </label>
+            <label className="grid gap-2">
+              <span className={labelClass}>Last name</span>
+              <input {...register('lastName')} placeholder="Last name" className="field" />
+            </label>
           </div>
-          <input {...register('email')} type="email" placeholder="Email" className="field" />
-          <input {...register('password')} type="password" placeholder="Password (8+ chars)" className="field" />
-          {error && <p className="text-sm text-red-300">{error}</p>}
-          <button className="btn-primary">Open my account</button>
+          <label className="grid gap-2">
+            <span className={labelClass}>Email</span>
+            <input {...register('email')} type="email" placeholder="you@example.com" className="field" />
+          </label>
+          <label className="grid gap-2">
+            <span className={labelClass}>Password</span>
+            <input
+              {...register('password')}
+              type="password"
+              placeholder="Password (8+ chars)"
+              className="field"
+            />
+          </label>
+          {error && (
+            <p role="alert" className="text-sm text-ember">
+              {error}
+            </p>
+          )}
+          <button className="btn-primary mt-1 py-3">Open my account</button>
         </form>
+
+        <div className="rule-fade my-7" />
+        <p className="text-center text-sm text-ivory-dim">
+          Already a member?{' '}
+          <Link href="/login" className="font-medium text-brass-300 hover:text-brass-200">
+            Sign in
+          </Link>
+        </p>
       </div>
     </div>
   );

@@ -1,12 +1,42 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { Check } from 'lucide-react';
 import { apiJson } from '@/lib/api-client';
 import { peso } from '@/lib/format';
 import type { Service, StaffMember } from '@/lib/types';
 
 function offeredIds(staff: StaffMember | null | undefined): string[] {
   return (staff?.services ?? []).map((x) => x.service.id);
+}
+
+function ColumnHeading({ label, hint }: { label: string; hint: string }) {
+  return (
+    <div className="mb-4 flex items-baseline justify-between gap-3">
+      <h3 className="font-display text-xl">{label}</h3>
+      <span className="text-[0.6875rem] uppercase tracking-[0.14em] text-ivory-dim/65">{hint}</span>
+    </div>
+  );
+}
+
+function PickSkeleton() {
+  return (
+    <div className="card">
+      <div className="grid gap-8 sm:grid-cols-2">
+        {[0, 1].map((col) => (
+          <div key={col}>
+            <div className="skeleton mb-4 h-6 w-28" />
+            <div className="grid gap-2.5">
+              {[0, 1, 2].map((row) => (
+                <div key={row} className="skeleton h-14 w-full rounded-xl" />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      <span className="sr-only">Loading chairs…</span>
+    </div>
+  );
 }
 
 export function BarberServicePicker({
@@ -31,9 +61,7 @@ export function BarberServicePicker({
     queryFn: () => apiJson<{ staff: StaffMember[] }>(`/api/v1/shops/${shopId}/staff`),
   });
 
-  if (servicesQ.isLoading || staffQ.isLoading) {
-    return <p className="text-cream/60">Loading chairs…</p>;
-  }
+  if (servicesQ.isLoading || staffQ.isLoading) return <PickSkeleton />;
 
   const services = servicesQ.data?.services ?? [];
   const barbers = staffQ.data?.staff ?? [];
@@ -41,11 +69,11 @@ export function BarberServicePicker({
 
   return (
     <div className="card">
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-8 sm:grid-cols-2">
         {/* Left: barbers */}
         <div>
-          <h3 className="font-display mb-2 text-lg">Barber</h3>
-          <div className="grid gap-2">
+          <ColumnHeading label="Barber" hint={`${barbers.length} chairs`} />
+          <div className="grid gap-2.5">
             {barbers.map((b) => {
               const unavailable = !!service && !offeredIds(b).includes(service.id);
               const selected = staff?.id === b.id;
@@ -53,30 +81,43 @@ export function BarberServicePicker({
                 <button
                   key={b.id}
                   disabled={unavailable}
+                  aria-pressed={selected}
                   onClick={() => onSelectStaff(b)}
-                  className={`rounded border p-2.5 text-left text-sm ${
-                    selected
-                      ? 'border-copper-500 bg-copper-600/15'
-                      : unavailable
-                        ? 'cursor-not-allowed border-cream/10 text-cream/40'
-                        : 'border-cream/15 bg-pine-950 hover:border-copper-500/60'
+                  className={`pickable flex items-center gap-3 ${
+                    selected ? 'pickable-selected' : unavailable ? 'pickable-disabled' : ''
                   }`}
                 >
-                  <span className={`font-medium ${unavailable ? 'line-through' : ''}`}>
-                    {b.user.firstName} {b.user.lastName}
+                  <span
+                    className="font-display flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-base text-brass-300"
+                    style={{
+                      background: 'rgb(196 160 72 / 0.13)',
+                      boxShadow: 'inset 0 0 0 1px rgb(196 160 72 / 0.26)',
+                    }}
+                    aria-hidden
+                  >
+                    {b.user.firstName.charAt(0)}
                   </span>
-                  <span className="ml-2 text-xs text-cream/50">
-                    {unavailable ? '· unavailable' : `· ${b.title ?? 'Hairstylist & Barber'}`}
+                  <span className="min-w-0 flex-1">
+                    <span
+                      className={`block truncate text-sm font-medium ${unavailable ? 'line-through' : ''}`}
+                    >
+                      {b.user.firstName} {b.user.lastName}
+                    </span>
+                    <span className="block truncate text-xs text-ivory-dim/75">
+                      {unavailable ? 'Unavailable for this service' : (b.title ?? 'Hairstylist & Barber')}
+                    </span>
                   </span>
+                  {selected && <Check size={16} className="shrink-0 text-brass-300" aria-hidden />}
                 </button>
               );
             })}
           </div>
         </div>
+
         {/* Right: services */}
         <div>
-          <h3 className="font-display mb-2 text-lg">Service</h3>
-          <div className="grid gap-2">
+          <ColumnHeading label="Service" hint={`${services.length} on the menu`} />
+          <div className="grid gap-2.5">
             {services.map((s) => {
               const unavailable = !!staff && !staffServiceIds.includes(s.id);
               const selected = service?.id === s.id;
@@ -87,23 +128,25 @@ export function BarberServicePicker({
                 <button
                   key={s.id}
                   disabled={unavailable}
+                  aria-pressed={selected}
                   onClick={() => onSelectService(s)}
-                  className={`rounded border p-2.5 text-left text-sm ${
-                    selected
-                      ? 'border-copper-500 bg-copper-600/15'
-                      : unavailable
-                        ? 'cursor-not-allowed border-cream/10 text-cream/40'
-                        : 'border-cream/15 bg-pine-950 hover:border-copper-500/60'
+                  className={`pickable ${
+                    selected ? 'pickable-selected' : unavailable ? 'pickable-disabled' : ''
                   }`}
                 >
-                  <span className="flex items-center justify-between gap-2">
-                    <span className={`font-medium ${unavailable ? 'line-through' : ''}`}>{s.name}</span>
-                    <span className={unavailable ? '' : 'text-copper-200'}>
+                  <span className="flex items-baseline justify-between gap-3">
+                    <span className={`text-sm font-medium ${unavailable ? 'line-through' : ''}`}>
+                      {s.name}
+                    </span>
+                    <span
+                      className={`shrink-0 text-sm ${unavailable ? 'text-ivory-dim/60' : 'text-brass-300'}`}
+                      data-numeric
+                    >
                       {staff ? peso(mine) : (s.priceRange ?? '')}
                     </span>
                   </span>
-                  <span className="text-xs text-cream/50">
-                    {unavailable ? '· unavailable for this barber' : `· ${s.durationMinutes} min`}
+                  <span className="mt-1 block text-xs text-ivory-dim/75" data-numeric>
+                    {unavailable ? 'Unavailable for this barber' : `${s.durationMinutes} min`}
                   </span>
                 </button>
               );

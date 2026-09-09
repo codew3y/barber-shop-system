@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Phone, Plus } from 'lucide-react';
 import { apiFetch, apiJson } from '@/lib/api-client';
 import { useAuthStore } from '@/stores/authStore';
 import { peso } from '@/lib/format';
@@ -30,9 +31,13 @@ const NEXT_STATUS: Record<string, { value: string; label: string }[]> = {
   ],
 };
 
+const LIVE_STATUSES = new Set(['pending', 'confirmed']);
+
 function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
+
+const fieldLabel = 'mb-2 block text-[0.6875rem] uppercase tracking-[0.14em] text-ivory-dim/70';
 
 export default function StaffPage() {
   const { user, ready } = useAuthStore();
@@ -65,13 +70,18 @@ export default function StaffPage() {
     enabled: ready && !!user,
   });
 
-  if (!ready) return <p className="text-cream/60">Loading…</p>;
+  if (!ready) return <div className="skeleton h-64 rounded-2xl" />;
   if (!user) {
     router.push('/login');
-    return <p className="text-cream/60">Redirecting…</p>;
+    return <div className="skeleton h-64 rounded-2xl" />;
   }
   if (user.role !== 'staff' && user.role !== 'admin' && user.role !== 'super_admin') {
-    return <p className="text-red-300">Staff only.</p>;
+    return (
+      <div className="card mx-auto max-w-md text-center">
+        <h1 className="font-display text-2xl">Staff only</h1>
+        <p className="muted mt-2 text-sm">This chair view is restricted to shop staff.</p>
+      </div>
+    );
   }
 
   async function setStatus(id: string, status: string) {
@@ -110,40 +120,86 @@ export default function StaffPage() {
 
   return (
     <div>
-      <p className="text-xs font-semibold tracking-widest text-copper-200">THE CHAIR</p>
-      <h1 className="font-display mb-4 text-3xl">Staff dashboard</h1>
-      {error && <p className="mb-3 text-sm text-red-300">{error}</p>}
+      <p className="eyebrow">The chair</p>
+      <h1 className="font-display mt-3 text-4xl sm:text-5xl">Staff dashboard</h1>
+      {error && (
+        <p role="alert" className="mt-4 text-sm text-ember">
+          {error}
+        </p>
+      )}
 
-      <section className="card mb-6">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-display text-xl">Day schedule</h2>
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="field text-sm" />
+      <section className="card mt-10 p-6 sm:p-7">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 className="font-display text-2xl">Day schedule</h2>
+            <p className="muted mt-1 text-sm">Refreshes on its own every 15 seconds.</p>
+          </div>
+          <label className="block">
+            <span className={fieldLabel}>Date</span>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="field w-auto"
+            />
+          </label>
         </div>
+
         {schedule.isLoading ? (
-          <p className="text-sm text-cream/60">Loading chairs…</p>
+          <div className="grid gap-2">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="skeleton h-20 rounded-xl" />
+            ))}
+            <span className="sr-only">Loading chairs…</span>
+          </div>
         ) : !schedule.data?.schedule.length ? (
-          <p className="text-sm text-cream/60">No bookings this day.</p>
+          <div className="inset rounded-xl px-4 py-12 text-center">
+            <p className="font-display text-lg">Clear day</p>
+            <p className="muted mt-1.5 text-sm">No bookings on the sheet.</p>
+          </div>
         ) : (
-          <ul className="grid gap-2">
+          <ul className="grid gap-2.5">
             {schedule.data.schedule.map((b) => (
-              <li key={b.id} className="rounded border border-cream/10 bg-pine-950 px-3 py-2">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium">
-                    {new Date(b.startAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} · {b.service.name}
+              <li key={b.id} className="inset rounded-xl px-4 py-3.5">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <span className="flex min-w-0 items-baseline gap-3">
+                    <span className="font-display shrink-0 text-lg text-brass-200" data-numeric>
+                      {new Date(b.startAt).toLocaleTimeString([], {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium">{b.service.name}</span>
+                      <span className="mt-0.5 flex flex-wrap items-center gap-x-2.5 text-xs text-ivory-dim/75">
+                        <span>
+                          {b.customer.firstName} {b.customer.lastName}
+                        </span>
+                        {b.customer.phone && (
+                          <span className="flex items-center gap-1" data-numeric>
+                            <Phone size={11} className="text-brass-400" />
+                            {b.customer.phone}
+                          </span>
+                        )}
+                      </span>
+                    </span>
                   </span>
-                  <span className="rounded bg-cream/10 px-2 py-0.5 text-xs">{b.status}</span>
+                  <span className={LIVE_STATUSES.has(b.status) ? 'badge-live' : 'badge-quiet'}>
+                    {b.status}
+                  </span>
                 </div>
-                <p className="text-sm text-cream/60">
-                  {b.customer.firstName} {b.customer.lastName}
-                  {b.customer.phone ? ` · ${b.customer.phone}` : ''}
-                </p>
+
+                {b.notes && (
+                  <p className="muted mt-2.5 text-sm italic">&ldquo;{b.notes}&rdquo;</p>
+                )}
+
                 {(NEXT_STATUS[b.status] ?? []).length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-2">
+                  <div className="mt-3.5 flex flex-wrap gap-2">
                     {NEXT_STATUS[b.status].map((a) => (
                       <button
                         key={a.value}
                         onClick={() => setStatus(b.id, a.value)}
-                        className="rounded border border-cream/20 px-2 py-1 text-xs hover:bg-cream/10"
+                        className="btn-quiet"
                       >
                         {a.label}
                       </button>
@@ -156,36 +212,105 @@ export default function StaffPage() {
         )}
       </section>
 
-      <div className="grid gap-6 sm:grid-cols-2">
-        <section className="card">
-          <h2 className="font-display mb-3 text-xl">Time off</h2>
-          <form onSubmit={requestTimeOff} className="mb-4 grid gap-2">
-            <label className="text-sm">From <input type="datetime-local" required value={offForm.start} onChange={(e) => setOffForm({ ...offForm, start: e.target.value })} className="field mt-1 block w-full text-sm" /></label>
-            <label className="text-sm">To <input type="datetime-local" required value={offForm.end} onChange={(e) => setOffForm({ ...offForm, end: e.target.value })} className="field mt-1 block w-full text-sm" /></label>
-            <input placeholder="Reason (optional)" value={offForm.reason} onChange={(e) => setOffForm({ ...offForm, reason: e.target.value })} className="field text-sm" />
-            <button className="btn-primary text-sm">Request time off</button>
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <section className="card p-6 sm:p-7">
+          <h2 className="font-display text-2xl">Time off</h2>
+          <form onSubmit={requestTimeOff} className="mt-5 grid gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className={fieldLabel}>From</span>
+                <input
+                  type="datetime-local"
+                  required
+                  value={offForm.start}
+                  onChange={(e) => setOffForm({ ...offForm, start: e.target.value })}
+                  className="field"
+                />
+              </label>
+              <label className="block">
+                <span className={fieldLabel}>To</span>
+                <input
+                  type="datetime-local"
+                  required
+                  value={offForm.end}
+                  onChange={(e) => setOffForm({ ...offForm, end: e.target.value })}
+                  className="field"
+                />
+              </label>
+            </div>
+            <label className="block">
+              <span className={fieldLabel}>Reason (optional)</span>
+              <input
+                placeholder="Reason (optional)"
+                value={offForm.reason}
+                onChange={(e) => setOffForm({ ...offForm, reason: e.target.value })}
+                className="field"
+              />
+            </label>
+            <button className="btn-primary justify-self-start">
+              <Plus size={15} /> Request time off
+            </button>
           </form>
-          <ul className="grid gap-1 text-sm">
+
+          <div className="rule-fade my-6" />
+
+          <ul className="grid gap-2">
             {(timeOff.data?.timeOff ?? []).map((t) => (
-              <li key={t.id} className="flex justify-between rounded border border-cream/10 px-2 py-1">
-                <span>{new Date(t.startAt).toLocaleDateString()} → {new Date(t.endAt).toLocaleDateString()}</span>
-                <span className="text-cream/60">{t.status}</span>
+              <li
+                key={t.id}
+                className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm"
+                style={{ boxShadow: 'inset 0 0 0 1px var(--line)' }}
+              >
+                <span data-numeric>
+                  {new Date(t.startAt).toLocaleDateString()} →{' '}
+                  {new Date(t.endAt).toLocaleDateString()}
+                </span>
+                <span className={t.status === 'approved' ? 'badge-live' : 'badge-quiet'}>
+                  {t.status}
+                </span>
               </li>
             ))}
+            {!timeOff.data?.timeOff.length && (
+              <li className="muted text-sm">No requests on file.</li>
+            )}
           </ul>
         </section>
 
-        <section className="card">
-          <h2 className="font-display mb-3 text-xl">Earnings (month)</h2>
+        <section className="card p-6 sm:p-7">
+          <h2 className="font-display text-2xl">Earnings (month)</h2>
           {earnings.data ? (
-            <dl className="grid gap-1 text-sm">
-              <div className="flex justify-between"><dt className="text-cream/60">Jobs</dt><dd>{earnings.data.bookings}</dd></div>
-              <div className="flex justify-between"><dt className="text-cream/60">Revenue</dt><dd>{peso(earnings.data.revenue)}</dd></div>
-              <div className="flex justify-between"><dt className="text-cream/60">Commission</dt><dd>{earnings.data.commissionRate}%</dd></div>
-              <div className="flex justify-between font-medium"><dt>Take-home</dt><dd className="text-copper-200">{peso(earnings.data.earnings)}</dd></div>
-            </dl>
+            <>
+              <p className="font-display mt-5 text-5xl text-brass-200" data-numeric>
+                {peso(earnings.data.earnings)}
+              </p>
+              <p className="muted mt-1 text-sm">Take-home so far this month</p>
+
+              <div className="rule-fade my-6" />
+
+              <dl className="grid gap-2.5">
+                {(
+                  [
+                    ['Jobs', String(earnings.data.bookings)],
+                    ['Revenue', peso(earnings.data.revenue)],
+                    ['Commission', `${earnings.data.commissionRate}%`],
+                  ] as [string, string][]
+                ).map(([label, value]) => (
+                  <div key={label} className="flex items-baseline gap-3">
+                    <dt className="text-sm text-ivory-dim">{label}</dt>
+                    <span className="mb-1 h-px flex-1 border-b border-dotted border-ivory/15" />
+                    <dd className="shrink-0 text-sm font-medium" data-numeric>
+                      {value}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </>
           ) : (
-            <p className="text-sm text-cream/60">Loading…</p>
+            <div className="mt-5 grid gap-3">
+              <div className="skeleton h-12 w-40" />
+              <div className="skeleton h-20 w-full" />
+              <span className="sr-only">Loading…</span>
+            </div>
           )}
         </section>
       </div>
