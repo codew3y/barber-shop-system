@@ -74,6 +74,7 @@
 | 2026-09-09 | Neon ops lessons: bulk availability (was 13s, now 0.5s — N+1 killed remote DB); booking create self-heals stale expired holds on exclusion conflict. IMPORTANT: app now writes to Neon — all SQL checks/cleanups must target Neon, not local docker. E2E green. |
 | 2026-09-08 | Applied emilkowalski animation skill: custom snap easings, hover-gated lifts, staggered entrances, step transitions, reduced-motion support, dead CSS removed. Build + e2e green. |
 | 2026-09-08 | Editorial landing rebuild (own expression): ghost type + glow hero, stats, services ticker, ritual steps, numbered menu, house-rules band. E2E green, screenshot-verified. |
+| 2026-09-09 | Skill-driven premium pass (Sonner toasts, NumberFlow hero stats, FAQ accordion, hold-to-confirm cancels). Full Before/After review in chat. E2E green, screenshot-verified. |
 | 2026-09-08 | Completed Phase 6 (M5): security headers, free-text sanitization, wider rate limits; 11/11 RBAC/IDOR matrix; 8-way race proves no double-booking; axe clean; `docs/SECURITY.md`. Lint 0 errors, build + e2e green. |
 | 2026-09-08 | Live data layer: Neon Postgres (btree_gist ✓, 4 migrations, seeded) + Upstash Redis verified; fixed pasted redis-cli fragment into rediss:// URL; app serves BarberHouse end-to-end from Neon. |
 
