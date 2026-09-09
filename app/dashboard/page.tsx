@@ -4,9 +4,25 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowUpRight, CalendarX2 } from 'lucide-react';
 import { apiFetch, apiJson } from '@/lib/api-client';
 import { useAuthStore } from '@/stores/authStore';
 import type { Booking } from '@/lib/types';
+
+function PageSkeleton({ note }: { note: string }) {
+  return (
+    <div className="mx-auto max-w-4xl">
+      <div className="skeleton h-4 w-24" />
+      <div className="skeleton mt-4 h-10 w-56" />
+      <div className="mt-8 grid gap-3">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="skeleton h-24 rounded-2xl" />
+        ))}
+      </div>
+      <span className="sr-only">{note}</span>
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const { user, ready } = useAuthStore();
@@ -24,9 +40,9 @@ export default function DashboardPage() {
     if (ready && !user) router.push('/login');
   }, [ready, user, router]);
 
-  if (!ready) return <p className="text-cream/60">Sweeping the floor…</p>;
-  if (!user) return <p className="text-cream/60">Redirecting to login…</p>;
-  if (isLoading) return <p className="text-cream/60">Fetching your tickets…</p>;
+  if (!ready) return <PageSkeleton note="Sweeping the floor…" />;
+  if (!user) return <PageSkeleton note="Redirecting to login…" />;
+  if (isLoading) return <PageSkeleton note="Fetching your tickets…" />;
 
   const now = new Date();
   const upcoming = (data?.bookings ?? []).filter(
@@ -47,19 +63,56 @@ export default function DashboardPage() {
 
   function BookingCard({ b }: { b: Booking }) {
     const active = b.status === 'pending' || b.status === 'confirmed';
+    const when = new Date(b.startAt);
     return (
-      <li className="rounded-2xl border border-cream/10 bg-pine-900 p-4">
-        <div className="flex items-center justify-between gap-2">
-          <Link href={`/bookings/${b.id}`} className="font-medium text-cream hover:underline">
-            {b.service?.name} at {b.shop?.name}
-          </Link>
-          <span className={`shrink-0 rounded px-2 py-0.5 text-xs font-medium ${active ? 'bg-copper-600/20 text-copper-200' : 'bg-cream/10 text-cream/60'}`}>{b.status}</span>
+      <li className="card lift-hover flex flex-col gap-4 sm:flex-row sm:items-center">
+        {/* Date block — the thing you scan for */}
+        <div
+          className="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-xl"
+          style={{
+            background: 'rgb(196 160 72 / 0.1)',
+            boxShadow: 'inset 0 0 0 1px rgb(196 160 72 / 0.22)',
+          }}
+          aria-hidden
+        >
+          <span className="text-[0.625rem] font-semibold uppercase tracking-[0.14em] text-brass-400">
+            {when.toLocaleDateString([], { month: 'short' })}
+          </span>
+          <span className="font-display text-2xl text-brass-200" data-numeric>
+            {when.getDate()}
+          </span>
         </div>
-        <p className="mt-1 text-sm text-cream/60">
-          {new Date(b.startAt).toLocaleString()} · {b.staff?.user.firstName} {b.staff?.user.lastName}
-        </p>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <Link
+              href={`/bookings/${b.id}`}
+              className="font-display group inline-flex items-center gap-1.5 text-lg text-ivory transition-colors duration-200 hover:text-brass-200"
+            >
+              {b.service?.name}
+              <ArrowUpRight
+                size={15}
+                className="nudge-diag text-brass-400"
+              />
+            </Link>
+            <span className={active ? 'badge-live' : 'badge-quiet'}>{b.status}</span>
+          </div>
+          <p className="muted mt-1 text-sm" data-numeric>
+            {when.toLocaleString([], {
+              weekday: 'short',
+              hour: 'numeric',
+              minute: '2-digit',
+            })}{' '}
+            · {b.staff?.user.firstName} {b.staff?.user.lastName} · {b.shop?.name}
+          </p>
+        </div>
+
         {active && (
-          <button onClick={() => cancel(b.id)} className="mt-3 rounded border border-cream/20 px-3 py-1 text-sm text-cream hover:bg-cream/10">
+          <button
+            onClick={() => cancel(b.id)}
+            className="btn-quiet shrink-0 self-start sm:self-center"
+          >
+            <CalendarX2 size={13} />
             Release chair
           </button>
         )}
@@ -68,22 +121,54 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="rounded-3xl border border-cream/10 bg-pine-900 px-5 py-8 text-cream sm:px-8">
-      <p className="text-xs font-semibold tracking-widest text-copper-200">THE LEDGER</p>
-      <h1 className="font-display mb-4 text-3xl">My chairs</h1>
-      {error && <p className="mb-3 text-sm text-red-300">{error}</p>}
-      <h2 className="font-display mb-2 text-xl text-cream/90">Upcoming ({upcoming.length})</h2>
-      {upcoming.length === 0 ? (
-        <p className="mb-6 text-sm text-cream/60">Nothing on the books. <Link href="/" className="text-copper-200 underline">Take a chair</Link>.</p>
-      ) : (
-        <ul className="mb-8 grid gap-3">{upcoming.map((b) => <BookingCard key={b.id} b={b} />)}</ul>
+    <div className="mx-auto max-w-4xl">
+      <p className="eyebrow">The ledger</p>
+      <h1 className="font-display mt-3 text-4xl sm:text-5xl">My chairs</h1>
+      {error && (
+        <p role="alert" className="mt-4 text-sm text-ember">
+          {error}
+        </p>
       )}
-      <h2 className="font-display mb-2 text-xl text-cream/90">History ({past.length})</h2>
-      {past.length === 0 ? (
-        <p className="text-sm text-cream/60">No past visits yet.</p>
-      ) : (
-        <ul className="grid gap-3">{past.map((b) => <BookingCard key={b.id} b={b} />)}</ul>
-      )}
+
+      <section className="mt-10">
+        <div className="mb-4 flex items-baseline gap-3">
+          <h2 className="font-display text-xl">Upcoming ({upcoming.length})</h2>
+          <span className="h-px flex-1" style={{ background: 'var(--line)' }} />
+        </div>
+        {upcoming.length === 0 ? (
+          <div className="inset rounded-2xl px-6 py-10 text-center">
+            <p className="font-display text-lg">Nothing on the books</p>
+            <p className="muted mt-1.5 text-sm">
+              <Link href="/" className="text-brass-300 hover:text-brass-200">
+                Take a chair
+              </Link>{' '}
+              and it will show up here.
+            </p>
+          </div>
+        ) : (
+          <ul className="grid gap-3">
+            {upcoming.map((b) => (
+              <BookingCard key={b.id} b={b} />
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="mt-12">
+        <div className="mb-4 flex items-baseline gap-3">
+          <h2 className="font-display text-xl">History ({past.length})</h2>
+          <span className="h-px flex-1" style={{ background: 'var(--line)' }} />
+        </div>
+        {past.length === 0 ? (
+          <p className="muted text-sm">No past visits yet.</p>
+        ) : (
+          <ul className="grid gap-3">
+            {past.map((b) => (
+              <BookingCard key={b.id} b={b} />
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }
