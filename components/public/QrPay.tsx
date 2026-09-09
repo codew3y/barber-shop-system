@@ -14,17 +14,14 @@ export function QrPay({
   amount,
   reference,
   qrImageUrl,
-  onPaid,
   onBack,
 }: {
   amount: number;
-  reference?: string | null;
+  reference: string | null;
   qrImageUrl?: string | null;
-  onPaid: () => void;
   onBack: () => void;
 }) {
   const payload = `BARBERHOUSE|${reference}|PHP ${amount.toFixed(2)}`;
-  const paidLabel = qrImageUrl ? "I've scanned — continue" : "I've paid — notify the shop";
 
   return (
     <div className="text-center">
@@ -55,9 +52,6 @@ export function QrPay({
       <div className="mt-5 flex justify-center gap-3">
         <button onClick={onBack} className="btn-ghost">
           <ArrowLeft size={15} /> Back
-        </button>
-        <button onClick={onPaid} className="btn-primary">
-          {paidLabel}
         </button>
       </div>
     </div>

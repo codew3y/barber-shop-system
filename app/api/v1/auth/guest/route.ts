@@ -8,9 +8,10 @@ import { cleanText } from '@/lib/sanitize';
 import { rateLimit } from '@/lib/rate-limit';
 import { guestSchema } from '@/schemas/auth';
 
-// Phone-only guest checkout: creates a customer account with a random
-// password (no login needed to book). The number identifies the guest;
-// if it's already registered, they should log in instead.
+// Guest checkout: creates a customer account with a random password
+// (no login needed to book). Repeat guests reuse their details freely:
+// an email/phone that belongs to a guest placeholder account resumes it,
+// while a real registered email still asks them to log in instead.
 export async function POST(req: NextRequest) {
   const limited = rateLimit(req, 'auth-guest', 5, 60_000);
   if (limited) return limited;
@@ -29,15 +30,29 @@ export async function POST(req: NextRequest) {
 
   const digits = phone.replace(/\D/g, '');
   const email = providedEmail ?? `guest.${digits}@barberhouse.local`;
-  const existing = await prisma.user.findFirst({
-    where: { OR: [{ email }, { phone }] },
-  });
-  if (existing) {
-    return jsonError(
-      providedEmail
-        ? 'This email or number is already registered — please log in instead'
-        : 'This number is already registered — please log in instead',
-      409
+  const byEmail = await prisma.user.findUnique({ where: { email } });
+  if (byEmail && !byEmail.email.endsWith('@barberhouse.local')) {
+    return jsonError('This email is already registered — please log in instead', 409);
+  }
+  const byPhone = await prisma.user.findUnique({ where: { phone } });
+  if (byPhone && !byPhone.email.endsWith('@barberhouse.local') && byPhone.id !== byEmail?.id) {
+    return jsonError('This number is already registered — please log in instead', 409);
+  }
+  const reusable = byEmail ?? byPhone;
+  if (reusable) {
+    const user = await prisma.user.update({
+      where: { id: reusable.id },
+      data: {
+        firstName: cleanText(firstName, 100),
+        lastName: cleanText(lastName, 100),
+        phone,
+        ...(providedEmail ? { email: providedEmail } : {}),
+      },
+    });
+    const tokens = generateTokens(user.id);
+    return NextResponse.json(
+      { user: publicUser(user), accessToken: tokens.accessToken, refreshToken: tokens.refreshToken },
+      { status: 200 }
     );
   }
 
