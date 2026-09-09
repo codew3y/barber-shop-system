@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useBookingStore } from '@/stores/bookingStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -11,11 +11,12 @@ import type { Booking, StaffMember } from '@/lib/types';
 import { ArrowLeft, ArrowRight, CalendarClock, Check, ClipboardCheck, Scissors } from 'lucide-react';
 import { BarberServicePicker } from './BarberServicePicker';
 import { SlotPicker } from './SlotPicker';
+import { StripePayment, stripeEnabled } from './PaymentForm';
 
 const steps = [
   { key: 'service', label: 'Barber & Service', Icon: Scissors },
   { key: 'slot', label: 'Time', Icon: CalendarClock },
-  { key: 'checkout', label: 'Review', Icon: ClipboardCheck },
+  { key: 'checkout', label: 'Review & Checkout', Icon: ClipboardCheck },
 ] as const;
 
 const stepIndex = (s: string) => (s === 'service' ? 0 : s === 'slot' ? 1 : 2);
@@ -114,9 +115,17 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
     useBookingStore();
   const { user, setSession } = useAuthStore();
   const [notes, setNotes] = useState('');
-  const [guest, setGuest] = useState({ firstName: '', lastName: '', phone: '' });
+  const [guest, setGuest] = useState({ firstName: '', lastName: '', phone: '', email: '' });
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [payment, setPayment] = useState<{ bookingId: string; clientSecret: string; amount: number } | null>(null);
+  const paymentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (payment) {
+      paymentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [payment]);
 
   useEffect(() => {
     let cancelled = false;
@@ -142,8 +151,13 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
 
   async function ensureAccount(): Promise<boolean> {
     if (user) return true;
-    if (!guest.firstName || !guest.lastName || guest.phone.replace(/\D/g, '').length < 7) {
-      setError('Add your name and phone number — no password needed, we keep the booking under your number.');
+    if (
+      !guest.firstName ||
+      !guest.lastName ||
+      guest.phone.replace(/\D/g, '').length < 7 ||
+      !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(guest.email)
+    ) {
+      setError('Add your name, phone number, and email — no password needed.');
       return false;
     }
     try {
@@ -159,13 +173,15 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
     }
   }
 
-  async function confirmBooking() {
+  // Reserve the chair, then collect the downpayment through Stripe.
+  // Without Stripe keys the chair is simply held for shop payment.
+  async function proceedToPayment() {
     if (!service || !staff || !slot) return;
     setError(null);
     setSubmitting(true);
     try {
       if (!(await ensureAccount())) return;
-      const data = await apiJson<{ booking: Booking }>(
+      const bookingData = await apiJson<{ booking: Booking }>(
         '/api/v1/bookings',
         {
           method: 'POST',
@@ -179,9 +195,26 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
           }),
         }
       );
-      reset();
-      toast.success('Chair reserved — see you soon.');
-      router.push(`/bookings/${data.booking.id}`);
+      const bookingId = bookingData.booking.id;
+      if (!stripeEnabled()) {
+        finishReserve(bookingId, 'Chair reserved — pay at the shop.');
+        return;
+      }
+      const intent = await apiJson<{ clientSecret: string; amount: string }>(
+        '/api/v1/payments/create-intent',
+        {
+          method: 'POST',
+          body: JSON.stringify({ bookingId, type: 'deposit' }),
+        }
+      ).catch((e) => {
+        if ((e as Error).message.includes('not configured')) return null;
+        throw e;
+      });
+      if (!intent) {
+        finishReserve(bookingId, 'Chair reserved — card payments are offline, pay at the shop.');
+        return;
+      }
+      setPayment({ bookingId, clientSecret: intent.clientSecret, amount: Number(intent.amount) });
     } catch (e) {
       const message = (e as Error).message;
       setError(message);
@@ -189,6 +222,12 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function finishReserve(bookingId: string, message: string) {
+    reset();
+    toast.success(message);
+    router.push(`/bookings/${bookingId}`);
   }
 
   const go = (s: 'service' | 'slot' | 'checkout') => {
@@ -286,7 +325,8 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
             {!user ? (
               <>
                 <p className="muted mt-1.5 text-sm">
-                  Checking out as a guest — just your name and number, no password.
+                  Checking out as a guest — name, number, and email for your confirmation. No
+                  password.
                 </p>
                 <div className="mt-5 grid gap-3">
                   <div className="grid gap-3 sm:grid-cols-2">
@@ -310,6 +350,13 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
                     onChange={(e) => setGuest({ ...guest, phone: e.target.value })}
                     className="field"
                   />
+                  <input
+                    placeholder="Email for confirmation"
+                    type="email"
+                    value={guest.email}
+                    onChange={(e) => setGuest({ ...guest, email: e.target.value })}
+                    className="field"
+                  />
                 </div>
               </>
             ) : (
@@ -330,14 +377,26 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
 
             {errorNote}
 
-            <div className="mt-6 flex gap-3">
-              <button onClick={() => go('slot')} className="btn-ghost">
-                <ArrowLeft size={15} /> Back
-              </button>
-              <button onClick={confirmBooking} disabled={submitting} className="btn-primary">
-                {submitting ? 'Reserving…' : 'Reserve my chair'}
-              </button>
-            </div>
+            {payment ? (
+              <div className="mt-6" ref={paymentRef}>
+                <p className="eyebrow mb-3">Downpayment · {peso(payment.amount)}</p>
+                <StripePayment
+                  clientSecret={payment.clientSecret}
+                  amount={payment.amount}
+                  onBack={() => setPayment(null)}
+                  onPaid={() => finishReserve(payment.bookingId, 'Downpayment paid — chair secured.')}
+                />
+              </div>
+            ) : (
+              <div className="mt-6 flex gap-3">
+                <button onClick={() => go('slot')} className="btn-ghost">
+                  <ArrowLeft size={15} /> Back
+                </button>
+                <button onClick={proceedToPayment} disabled={submitting} className="btn-primary">
+                  {submitting ? 'Reserving…' : 'Proceed to payment'}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* The ticket */}

@@ -38,11 +38,45 @@ test('guest books end-to-end and tracks in dashboard', async ({ page }) => {
   await slotButton.click();
   await page.getByRole('button', { name: 'Continue' }).click();
 
-  // Step 4: guest checkout (phone only, no password)
+  // Step 4: review & checkout — guest details with email, then Stripe test card
   await page.getByPlaceholder('First name').fill('E2E');
   await page.getByPlaceholder('Last name').fill('Guest');
   await page.getByPlaceholder('Phone number').fill(phone);
-  await page.getByRole('button', { name: 'Reserve my chair' }).click();
+  await page.getByPlaceholder('Email for confirmation').fill(`e2e${Date.now()}@example.com`);
+  await page.getByRole('button', { name: 'Proceed to payment' }).click();
+
+  // Stripe splits card fields across iframes — fill whichever frame shows each field.
+  await expect
+    .poll(
+      async () => {
+        for (const f of page.frames()) {
+          if ((await f.getByLabel('Card number', { exact: true }).count()) > 0) return true;
+        }
+        return false;
+      },
+      { timeout: 20000 }
+    )
+    .toBe(true);
+  async function stripeFill(label: string, value: string) {
+    for (const f of page.frames()) {
+      const loc = f.getByLabel(label, { exact: true });
+      if ((await loc.count()) > 0) {
+        try {
+          await loc.first().fill(value, { timeout: 5000 });
+          return;
+        } catch {
+          // hidden duplicate — try next frame
+        }
+      }
+    }
+    throw new Error(`stripe field missing: ${label}`);
+  }
+  await stripeFill('Card number', '4242424242424242');
+  await stripeFill('Expiration date', '12/34');
+  await stripeFill('Security code', '123');
+  const payBtn = page.getByRole('button', { name: /Pay ₱/ });
+  await payBtn.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+  await payBtn.click();
 
   // Confirmation page
   await expect(page.getByRole('heading', { name: /Chair reserved/ })).toBeVisible({ timeout: 15000 });

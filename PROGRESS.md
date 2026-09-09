@@ -75,6 +75,7 @@
 | 2026-09-08 | Applied emilkowalski animation skill: custom snap easings, hover-gated lifts, staggered entrances, step transitions, reduced-motion support, dead CSS removed. Build + e2e green. |
 | 2026-09-08 | Editorial landing rebuild (own expression): ghost type + glow hero, stats, services ticker, ritual steps, numbered menu, house-rules band. E2E green, screenshot-verified. |
 | 2026-09-09 | Skill-driven premium pass (Sonner toasts, NumberFlow hero stats, FAQ accordion, hold-to-confirm cancels). Full Before/After review in chat. E2E green, screenshot-verified. |
+| 2026-09-09 | In-app Stripe card payments: guest email capture, Proceed-to-payment creates booking + deposit intent, Payment Element + in-page confirm, auto-scroll to Pay (fixed sticky-header overlap). E2E pays with test card green. |
 | 2026-09-09 | Merged other-session redesign (warm ink & brass, Fraunces/Inter, Reveal, skeletons) via rebase: kept their system, preserved our gating/pricing/booking logic, ported FAQ + toasts + hold flow, dropped dead tokens. E2E green, screenshot-verified. |
 | 2026-09-08 | Completed Phase 6 (M5): security headers, free-text sanitization, wider rate limits; 11/11 RBAC/IDOR matrix; 8-way race proves no double-booking; axe clean; `docs/SECURITY.md`. Lint 0 errors, build + e2e green. |
 | 2026-09-08 | Live data layer: Neon Postgres (btree_gist ✓, 4 migrations, seeded) + Upstash Redis verified; fixed pasted redis-cli fragment into rediss:// URL; app serves BarberHouse end-to-end from Neon. |
