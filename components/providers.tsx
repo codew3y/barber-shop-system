@@ -37,6 +37,12 @@ function Nav() {
   const { user, ready, clear, hydrate } = useAuthStore();
   const pathname = usePathname();
   const [activeSection, setActiveSection] = useState('');
+  const { data: shopData } = useQuery({
+    queryKey: ['nav-shop'],
+    queryFn: () => apiJson<{ shops: { id: string }[] }>('/api/v1/shops?limit=1'),
+    staleTime: 5 * 60_000,
+  });
+  const bookHref = shopData?.shops[0] ? `/booking/${shopData.shops[0].id}` : '/';
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
     void hydrate();
@@ -147,7 +153,7 @@ function Nav() {
                 <LogIn size={15} />
                 Sign in
               </Link>
-              <Link href="/register" className="btn-primary px-4 py-1.5 text-sm" data-press>
+              <Link href={bookHref} className="btn-primary px-4 py-1.5 text-sm" data-press>
                 <CalendarCheck size={15} />
                 Book now
               </Link>

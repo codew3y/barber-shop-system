@@ -20,6 +20,7 @@ export const guestSchema = z.object({
   firstName: z.string().min(1).max(100),
   lastName: z.string().min(1).max(100),
   phone: z.string().min(7).max(20),
+  email: z.string().email().max(255).optional(),
 });
 
 export const forgotPasswordSchema = z.object({

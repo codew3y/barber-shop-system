@@ -1,21 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useBookingStore } from '@/stores/bookingStore';
 import { useAuthStore } from '@/stores/authStore';
-import { apiJson } from '@/lib/api-client';
+import { apiFetch, apiJson } from '@/lib/api-client';
 import { depositFor, peso } from '@/lib/format';
 import { toast } from 'sonner';
 import type { Booking, StaffMember } from '@/lib/types';
-import { ArrowLeft, ArrowRight, CalendarClock, Check, ClipboardCheck, Scissors } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CalendarClock, Check, ClipboardCheck, QrCode, Scissors } from 'lucide-react';
 import { BarberServicePicker } from './BarberServicePicker';
 import { SlotPicker } from './SlotPicker';
+import { QrPay } from './QrPay';
 
 const steps = [
   { key: 'service', label: 'Barber & Service', Icon: Scissors },
   { key: 'slot', label: 'Time', Icon: CalendarClock },
-  { key: 'checkout', label: 'Review', Icon: ClipboardCheck },
+  { key: 'checkout', label: 'Review & Checkout', Icon: ClipboardCheck },
 ] as const;
 
 const stepIndex = (s: string) => (s === 'service' ? 0 : s === 'slot' ? 1 : 2);
@@ -114,9 +115,49 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
     useBookingStore();
   const { user, setSession } = useAuthStore();
   const [notes, setNotes] = useState('');
-  const [guest, setGuest] = useState({ firstName: '', lastName: '', phone: '' });
+  const [guest, setGuest] = useState({ firstName: '', lastName: '', phone: '', email: '' });
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [payment, setPayment] = useState<{
+    bookingId: string;
+    amount: number;
+    reference: string | null;
+    qrImageUrl: string | null;
+  } | null>(null);
+  const paymentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (payment) {
+      paymentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [payment]);
+
+  // PayMongo path: poll for webhook confirmation and auto-advance.
+  useEffect(() => {
+    if (!payment?.qrImageUrl) return;
+    const bookingId = payment.bookingId;
+    let tries = 0;
+    const timer = setInterval(async () => {
+      tries += 1;
+      if (tries > 100) {
+        clearInterval(timer);
+        return;
+      }
+      try {
+        const data = await apiJson<{ booking: Booking }>(`/api/v1/bookings/${bookingId}`);
+        if (data.booking.status === 'confirmed') {
+          clearInterval(timer);
+          setPayment(null);
+          reset();
+          toast.success('Payment confirmed — see you soon.');
+          router.push(`/bookings/${bookingId}`);
+        }
+      } catch {
+        // keep polling; the webhook may simply not have landed yet
+      }
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [payment?.qrImageUrl, payment?.bookingId, reset, router]);
 
   useEffect(() => {
     let cancelled = false;
@@ -142,8 +183,13 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
 
   async function ensureAccount(): Promise<boolean> {
     if (user) return true;
-    if (!guest.firstName || !guest.lastName || guest.phone.replace(/\D/g, '').length < 7) {
-      setError('Add your name and phone number — no password needed, we keep the booking under your number.');
+    if (
+      !guest.firstName ||
+      !guest.lastName ||
+      guest.phone.replace(/\D/g, '').length < 7 ||
+      !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(guest.email)
+    ) {
+      setError('Add your name, phone number, and email — no password needed.');
       return false;
     }
     try {
@@ -159,13 +205,16 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
     }
   }
 
-  async function confirmBooking() {
+  // Reserve the chair, then collect the downpayment over QRPh.
+  // Primary: PayMongo dynamic QR (auto-confirm via webhook).
+  // Fallback: manual reference QR when payments aren't configured (dev/CI).
+  async function proceedToPayment() {
     if (!service || !staff || !slot) return;
     setError(null);
     setSubmitting(true);
     try {
       if (!(await ensureAccount())) return;
-      const data = await apiJson<{ booking: Booking }>(
+      const bookingData = await apiJson<{ booking: Booking }>(
         '/api/v1/bookings',
         {
           method: 'POST',
@@ -179,9 +228,25 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
           }),
         }
       );
-      reset();
-      toast.success('Chair reserved — see you soon.');
-      router.push(`/bookings/${data.booking.id}`);
+      const bookingId = bookingData.booking.id;
+      const intentRes = await apiFetch('/api/v1/payments/create-intent', {
+        method: 'POST',
+        body: JSON.stringify({ bookingId, type: 'deposit' }),
+      });
+      if (intentRes.status === 503) {
+        const qr = await apiJson<{ amount: string; reference: string }>('/api/v1/payments/qr', {
+          method: 'POST',
+          body: JSON.stringify({ bookingId, type: 'deposit' }),
+        });
+        setPayment({ bookingId, amount: Number(qr.amount), reference: qr.reference, qrImageUrl: null });
+        return;
+      }
+      if (!intentRes.ok) {
+        const errBody = (await intentRes.json().catch(() => ({}))) as { error?: string };
+        throw new Error(errBody.error ?? `Payment failed (${intentRes.status})`);
+      }
+      const intent = (await intentRes.json()) as { amount: string; qrImageUrl: string };
+      setPayment({ bookingId, amount: Number(intent.amount), reference: null, qrImageUrl: intent.qrImageUrl });
     } catch (e) {
       const message = (e as Error).message;
       setError(message);
@@ -189,6 +254,12 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function finishReserve(bookingId: string, message: string) {
+    reset();
+    toast.success(message);
+    router.push(`/bookings/${bookingId}`);
   }
 
   const go = (s: 'service' | 'slot' | 'checkout') => {
@@ -286,7 +357,8 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
             {!user ? (
               <>
                 <p className="muted mt-1.5 text-sm">
-                  Checking out as a guest — just your name and number, no password.
+                  Checking out as a guest — name, number, and email for your confirmation. No
+                  password.
                 </p>
                 <div className="mt-5 grid gap-3">
                   <div className="grid gap-3 sm:grid-cols-2">
@@ -310,6 +382,13 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
                     onChange={(e) => setGuest({ ...guest, phone: e.target.value })}
                     className="field"
                   />
+                  <input
+                    placeholder="Email for confirmation"
+                    type="email"
+                    value={guest.email}
+                    onChange={(e) => setGuest({ ...guest, email: e.target.value })}
+                    className="field"
+                  />
                 </div>
               </>
             ) : (
@@ -330,14 +409,37 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
 
             {errorNote}
 
-            <div className="mt-6 flex gap-3">
-              <button onClick={() => go('slot')} className="btn-ghost">
-                <ArrowLeft size={15} /> Back
-              </button>
-              <button onClick={confirmBooking} disabled={submitting} className="btn-primary">
-                {submitting ? 'Reserving…' : 'Reserve my chair'}
-              </button>
-            </div>
+            {payment ? (
+              <div className="mt-6" ref={paymentRef}>
+                <QrPay
+                  amount={payment.amount}
+                  reference={payment.reference}
+                  qrImageUrl={payment.qrImageUrl}
+                  onBack={() => setPayment(null)}
+                  onPaid={() =>
+                    finishReserve(
+                      payment.bookingId,
+                      `Payment noted (${payment.reference}) — show it at the shop.`
+                    )
+                  }
+                />
+              </div>
+            ) : (
+              <div className="mt-6 flex gap-3">
+                <button onClick={() => go('slot')} className="btn-ghost">
+                  <ArrowLeft size={15} /> Back
+                </button>
+                <button onClick={proceedToPayment} disabled={submitting} className="btn-primary">
+                  {submitting ? (
+                    'Reserving…'
+                  ) : (
+                    <>
+                      <QrCode size={15} /> Scan QRPh for payment
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* The ticket */}
@@ -365,8 +467,8 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
             </dl>
 
             <p className="muted mt-5 text-xs leading-relaxed">
-              The balance is settled at the chair. Reschedule or release the chair any time from
-              your dashboard.
+              Downpayments are non-refundable. The balance is settled at the chair. Reschedule
+              or release the chair any time from your dashboard.
             </p>
           </aside>
         </div>
