@@ -13,9 +13,15 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ sho
     include: { staff: { select: { customPrice: true } } },
   });
   return NextResponse.json({
-    services: services.map(({ staff, ...s }) => ({
-      ...s,
-      priceRange: priceRange(Number(s.price), staff.map((x) => (x.customPrice ? Number(x.customPrice) : null))),
-    })),
+    services: services.map(({ staff, ...s }) => {
+      const customs = staff.map((x) => (x.customPrice ? Number(x.customPrice) : null));
+      const values = [Number(s.price), ...customs.filter((c) => c != null)];
+      return {
+        ...s,
+        priceRange: priceRange(Number(s.price), customs),
+        minPrice: Math.min(...values),
+        maxPrice: Math.max(...values),
+      };
+    }),
   });
 }

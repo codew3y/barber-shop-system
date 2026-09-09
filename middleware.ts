@@ -13,11 +13,10 @@ export function middleware(_req: NextRequest) {
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob:",
-      "connect-src 'self' https://api.stripe.com",
-      "frame-src https://js.stripe.com",
+      "connect-src 'self' https://api.paymongo.com",
       "font-src 'self' data:",
     ].join('; ')
   );
