@@ -238,7 +238,7 @@ export function SlotPicker({
                             {time}
                           </span>
                           {!slot.available && (
-                            <span className="block text-[0.625rem] font-normal">taken</span>
+                            <span className="block text-[0.625rem] font-normal">unavailable</span>
                           )}
                         </button>
                       );

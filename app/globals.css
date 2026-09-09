@@ -349,6 +349,44 @@ body > * {
   }
 }
 
+/* Step changes: quick fade-slide so swaps don't feel broken. */
+@keyframes step-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.step-enter {
+  animation: step-in 200ms ease-out;
+}
+
+/* Marquee ticker: constant linear motion, pause on hover. */
+@keyframes ticker {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.ticker-track {
+  animation: ticker 28s linear infinite;
+}
+.ticker:hover .ticker-track {
+  animation-play-state: paused;
+}
+
+/* Ghost outline display word. */
+.ghost-word {
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(247, 242, 233, 0.22);
+  user-select: none;
+}
+
 @keyframes rise {
   from {
     opacity: 0;
