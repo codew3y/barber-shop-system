@@ -364,6 +364,21 @@ body > * {
   animation: step-in 200ms ease-out;
 }
 
+/* Step changes: quick fade-slide so swaps don't feel broken. */
+@keyframes step-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.step-enter {
+  animation: step-in 200ms ease-out;
+}
+
 /* Marquee ticker: constant linear motion, pause on hover. */
 @keyframes ticker {
   from {

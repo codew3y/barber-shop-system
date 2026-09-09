@@ -199,20 +199,44 @@ export async function getAvailableSlots(
 
   const now = new Date();
   const slots: TimeSlot[] = [];
+
+  // Bulk inputs (one round of queries, not one per slot).
+  const dayStartUtc = wallToUtc(timeZone, date, 0);
+  const dayEndUtc = wallToUtc(timeZone, date, 1440);
+  const dayBookings = await prisma.booking.findMany({
+    where: {
+      staffId,
+      NOT: { status: { in: ['cancelled', 'no_show'] } },
+      startAt: { lt: dayEndUtc },
+      endAt: { gt: dayStartUtc },
+    },
+    select: { startAt: true, endAt: true, status: true, holdExpiresAt: true },
+  });
+  const blocking = dayBookings.filter(
+    (b) =>
+      b.status === 'confirmed' ||
+      b.status === 'completed' ||
+      (b.status === 'pending' && (b.holdExpiresAt === null || b.holdExpiresAt > now))
+  );
+  const dayOff = await prisma.timeOff.findMany({
+    where: { staffId, status: 'approved', startAt: { lt: dayEndUtc }, endAt: { gt: dayStartUtc } },
+    select: { startAt: true, endAt: true },
+  });
+  const leadCutoff = new Date(now.getTime() + MIN_LEAD_MINUTES * 60_000);
+
   for (const a of availabilities) {
     const windowStart = timeToMinutes(a.startTime);
     const windowEnd = timeToMinutes(a.endTime);
     for (let m = windowStart; m + totalMinutes <= windowEnd; m += SLOT_STEP_MINUTES) {
       const start = wallToUtc(timeZone, date, m);
       const end = new Date(start.getTime() + totalMinutes * 60_000);
-      let available = true;
-      if (start < new Date(now.getTime() + MIN_LEAD_MINUTES * 60_000)) {
-        available = false;
-      } else {
-        const check = await validateSlotAvailability(staffId, serviceId, shopId, start);
-        available = check.valid;
-      }
-      slots.push({ startTime: start.toISOString(), endTime: end.toISOString(), available });
+      const overlapsBooking = blocking.some((b) => b.startAt < end && b.endAt > start);
+      const overlapsOff = dayOff.some((t) => t.startAt < end && t.endAt > start);
+      slots.push({
+        startTime: start.toISOString(),
+        endTime: end.toISOString(),
+        available: start >= leadCutoff && !overlapsBooking && !overlapsOff,
+      });
     }
   }
   return { slots, timeZone };

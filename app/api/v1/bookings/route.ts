@@ -44,19 +44,21 @@ export async function POST(req: NextRequest) {
     return jsonError(check.error ?? 'Slot unavailable', 409);
   }
 
+  const payload = {
+    customerId: auth.user.id,
+    staffId,
+    serviceId,
+    shopId,
+    startAt: start,
+    endAt: check.endTime,
+    status: 'pending' as const,
+    holdExpiresAt: new Date(Date.now() + HOLD_MINUTES * 60_000),
+    notes: cleanOptional(notes, 500),
+  };
+
   try {
     const booking = await prisma.booking.create({
-      data: {
-        customerId: auth.user.id,
-        staffId,
-        serviceId,
-        shopId,
-        startAt: start,
-        endAt: check.endTime,
-        status: 'pending',
-        holdExpiresAt: new Date(Date.now() + HOLD_MINUTES * 60_000),
-        notes: cleanOptional(notes, 500),
-      },
+      data: payload,
       include: { service: true, staff: { include: { user: { select: { firstName: true, lastName: true } } } }, shop: true },
     });
     void queueBookingNotifications(booking.id, 'booking_confirmed');
@@ -65,7 +67,40 @@ export async function POST(req: NextRequest) {
       NextResponse.json({ booking, holdExpiresAt: booking.holdExpiresAt }, { status: 201 })
     );
   } catch (err) {
-    // Exclusion-constraint violation (race lost) surfaces as P2002/23xxx
-    return jsonError('Time slot is no longer available', 409);
+    // Genuine race OR stale expired holds tripping the exclusion constraint
+    // (availability ignores expired holds, the constraint doesn't). Release
+    // this staff's expired holds overlapping the slot and retry once.
+    const msg = err instanceof Error ? err.message : '';
+    if (!msg.includes('no_overlap_booking')) {
+      return jsonError('Time slot is no longer available', 409);
+    }
+    await prisma.booking.updateMany({
+      where: {
+        staffId,
+        status: 'pending',
+        holdExpiresAt: { lt: new Date() },
+        startAt: { lt: check.endTime },
+        endAt: { gt: start },
+      },
+      data: {
+        status: 'cancelled',
+        cancellationReason: 'Payment hold expired',
+        cancelledAt: new Date(),
+        holdExpiresAt: null,
+      },
+    });
+    try {
+      const booking = await prisma.booking.create({
+        data: payload,
+        include: { service: true, staff: { include: { user: { select: { firstName: true, lastName: true } } } }, shop: true },
+      });
+      void queueBookingNotifications(booking.id, 'booking_confirmed');
+      return setIdempotentResponse(
+        cacheKey,
+        NextResponse.json({ booking, holdExpiresAt: booking.holdExpiresAt }, { status: 201 })
+      );
+    } catch {
+      return jsonError('Time slot is no longer available', 409);
+    }
   }
 }
