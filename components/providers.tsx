@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Toaster } from 'sonner';
-import { CalendarCheck, Clock3, LogIn, MapPin, Phone, Scissors } from 'lucide-react';
+import { CalendarCheck, Clock3, LogIn, MapPin, Phone } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { apiJson } from '@/lib/api-client';
 import type { Shop } from '@/lib/types';
@@ -14,14 +14,9 @@ import type { Shop } from '@/lib/types';
 function BrandMark() {
   return (
     <Link href="/" className="group flex items-center gap-2.5" data-press>
-      <span
-        className="relative flex h-9 w-9 items-center justify-center rounded-full text-brass-300"
-        style={{
-          background: 'linear-gradient(180deg, rgb(196 160 72 / 0.18), rgb(196 160 72 / 0.04))',
-          boxShadow: 'inset 0 0 0 1px rgb(196 160 72 / 0.35)',
-        }}
-      >
-        <Scissors size={15} strokeWidth={2} />
+      <span className="relative block h-9 w-9 overflow-hidden rounded-2xl">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/icon.svg" alt="BarberHouse" className="h-full w-full" />
       </span>
       <span className="flex flex-col leading-none">
         <span className="font-display text-[1.0625rem] tracking-[0.02em]">BarberHouse</span>
