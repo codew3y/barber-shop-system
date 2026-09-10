@@ -96,7 +96,7 @@ export default async function Home() {
                 <dt className="font-display text-3xl text-brass-300" data-numeric>
                   {value}
                 </dt>
-                <dd className="text-[0.6875rem] uppercase tracking-[0.16em] text-ivory-dim/75">
+                <dd className="text-[0.625rem] uppercase leading-snug tracking-[0.14em] text-ivory-dim/75 sm:text-[0.6875rem] sm:tracking-[0.16em]">
                   {label}
                 </dd>
               </div>
