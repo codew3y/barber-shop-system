@@ -14,9 +14,9 @@ import type { Shop } from '@/lib/types';
 function BrandMark() {
   return (
     <Link href="/" className="group flex items-center gap-2.5" data-press>
-      <span className="relative block h-9 w-9 overflow-hidden rounded-2xl">
+      <span className="relative block h-9 w-9 overflow-hidden rounded-full">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/icon.svg" alt="BarberHouse" className="h-full w-full" />
+        <img src="/barberlogo-icon.jpg" alt="BarberHouse" className="h-full w-full object-cover" />
       </span>
       <span className="flex flex-col leading-none">
         <span className="font-display text-[1.0625rem] tracking-[0.02em]">BarberHouse</span>
