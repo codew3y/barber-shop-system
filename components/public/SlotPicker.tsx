@@ -149,6 +149,7 @@ export function SlotPicker({
       apiJson<{ slots: TimeSlot[]; timeZone: string }>(
         `/api/v1/shops/${shopId}/staff/${staffId}/availability?date=${date}&serviceId=${serviceId}`
       ),
+    staleTime: 15_000,
   });
 
   const timeZone = data?.timeZone;

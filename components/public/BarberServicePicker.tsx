@@ -55,10 +55,12 @@ export function BarberServicePicker({
   const servicesQ = useQuery({
     queryKey: ['services', shopId],
     queryFn: () => apiJson<{ services: Service[] }>(`/api/v1/shops/${shopId}/services`),
+    staleTime: 60_000,
   });
   const staffQ = useQuery({
     queryKey: ['staff', shopId],
     queryFn: () => apiJson<{ staff: StaffMember[] }>(`/api/v1/shops/${shopId}/staff`),
+    staleTime: 60_000,
   });
 
   if (servicesQ.isLoading || staffQ.isLoading) return <PickSkeleton />;
