@@ -7,7 +7,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowUpRight, CalendarX2 } from 'lucide-react';
 import { apiFetch, apiJson } from '@/lib/api-client';
 import { useAuthStore } from '@/stores/authStore';
-import { HoldButton } from '@/components/hold-button';
+import { PayNow } from '@/components/public/PayNow';
 import { toast } from 'sonner';
 import type { Booking } from '@/lib/types';
 
@@ -62,7 +62,7 @@ export default function DashboardPage() {
       toast.error(message);
       return;
     }
-    toast.success('Chair released.');
+    toast.success('Booking cancelled.');
     queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
   }
 
@@ -70,53 +70,70 @@ export default function DashboardPage() {
     const active = b.status === 'pending' || b.status === 'confirmed';
     const when = new Date(b.startAt);
     return (
-      <li className="card lift-hover flex flex-col gap-4 sm:flex-row sm:items-center">
-        {/* Date block — the thing you scan for */}
-        <div
-          className="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-xl"
-          style={{
-            background: 'rgb(196 160 72 / 0.1)',
-            boxShadow: 'inset 0 0 0 1px rgb(196 160 72 / 0.22)',
-          }}
-          aria-hidden
-        >
-          <span className="text-[0.625rem] font-semibold uppercase tracking-[0.14em] text-brass-400">
-            {when.toLocaleDateString([], { month: 'short' })}
-          </span>
-          <span className="font-display text-2xl text-brass-200" data-numeric>
-            {when.getDate()}
-          </span>
-        </div>
+      <li className="card lift-hover flex flex-col gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          {/* Date block — the thing you scan for */}
+          <div
+            className="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-xl"
+            style={{
+              background: 'rgb(196 160 72 / 0.1)',
+              boxShadow: 'inset 0 0 0 1px rgb(196 160 72 / 0.22)',
+            }}
+            aria-hidden
+          >
+            <span className="text-[0.625rem] font-semibold uppercase tracking-[0.14em] text-brass-400">
+              {when.toLocaleDateString([], { month: 'short' })}
+            </span>
+            <span className="font-display text-2xl text-brass-200" data-numeric>
+              {when.getDate()}
+            </span>
+          </div>
 
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
             <Link
               href={`/bookings/${b.id}`}
               className="font-display group inline-flex items-center gap-1.5 text-lg text-ivory transition-colors duration-200 hover:text-brass-200"
             >
               {b.service?.name}
-              <ArrowUpRight
-                size={15}
-                className="nudge-diag text-brass-400"
-              />
+              <ArrowUpRight size={15} className="nudge-diag text-brass-400" />
             </Link>
-            <span className={active ? 'badge-live' : 'badge-quiet'}>{b.status}</span>
+            <p className="muted mt-1 text-sm" data-numeric>
+              {when.toLocaleString([], {
+                weekday: 'short',
+                hour: 'numeric',
+                minute: '2-digit',
+              })}{' '}
+              · {b.staff?.user.firstName} {b.staff?.user.lastName} · {b.shop?.name}
+            </p>
           </div>
-          <p className="muted mt-1 text-sm" data-numeric>
-            {when.toLocaleString([], {
-              weekday: 'short',
-              hour: 'numeric',
-              minute: '2-digit',
-            })}{' '}
-            · {b.staff?.user.firstName} {b.staff?.user.lastName} · {b.shop?.name}
-          </p>
+
+          {/* Status and action share one row so they read as a pair. */}
+          <div className="flex shrink-0 items-center gap-2 self-start sm:self-center">
+            <span className={active ? 'badge-live' : 'badge-quiet'}>{b.status}</span>
+            {active && (
+              <button onClick={() => cancel(b.id)} className="btn-quiet">
+                <CalendarX2 size={13} />
+                Cancel
+              </button>
+            )}
+          </div>
         </div>
 
-          {active && (
-            <div className="shrink-0 self-start sm:self-center">
-              <HoldButton onConfirm={() => cancel(b.id)}>Hold to release</HoldButton>
+        {/* A pending booking is reserved but unpaid — without this there was no
+            way to settle the downpayment after leaving checkout. */}
+        {b.status === 'pending' && (
+          <div className="w-full">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="muted text-sm">
+                Awaiting downpayment — the chair is held until this is paid.
+              </p>
+              <PayNow
+                bookingId={b.id}
+                onConfirmed={() => queryClient.invalidateQueries({ queryKey: ['my-bookings'] })}
+              />
             </div>
-          )}
+          </div>
+        )}
       </li>
     );
   }

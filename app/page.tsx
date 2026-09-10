@@ -81,7 +81,11 @@ export default async function Home() {
           </p>
 
           <div className="rise rise-3 mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link href={`/booking/${shop.id}`} className="btn-primary px-7 py-3 text-base" data-press>
+            <Link
+              href={`/booking/${shop.id}`}
+              className="btn-primary px-7 py-3 text-base"
+              data-press
+            >
               Book your chair
               <ArrowRight size={17} />
             </Link>
@@ -96,7 +100,7 @@ export default async function Home() {
                 <dt className="font-display text-3xl text-brass-300" data-numeric>
                   {value}
                 </dt>
-                <dd className="text-[0.6875rem] uppercase tracking-[0.16em] text-ivory-dim/75">
+                <dd className="text-[0.625rem] uppercase leading-snug tracking-[0.14em] text-ivory-dim/75 sm:text-[0.6875rem] sm:tracking-[0.16em]">
                   {label}
                 </dd>
               </div>
@@ -110,20 +114,15 @@ export default async function Home() {
         {features.map((f, i) => (
           <Reveal key={f.title} delay={i * 70}>
             <div className="card lift-hover h-full">
-              <div className="flex items-start justify-between">
-                <span
-                  className="flex h-11 w-11 items-center justify-center rounded-xl text-brass-300"
-                  style={{
-                    background: 'rgb(196 160 72 / 0.12)',
-                    boxShadow: 'inset 0 0 0 1px rgb(196 160 72 / 0.25)',
-                  }}
-                >
-                  <f.Icon size={19} strokeWidth={1.75} />
-                </span>
-                <span className="font-display text-2xl text-ivory/12" data-numeric>
-                  {String(i + 1).padStart(2, '0')}
-                </span>
-              </div>
+              <span
+                className="flex h-11 w-11 items-center justify-center rounded-xl text-brass-300"
+                style={{
+                  background: 'rgb(196 160 72 / 0.12)',
+                  boxShadow: 'inset 0 0 0 1px rgb(196 160 72 / 0.25)',
+                }}
+              >
+                <f.Icon size={19} strokeWidth={1.75} />
+              </span>
               <h2 className="font-display mt-4 text-xl">{f.title}</h2>
               <p className="muted mt-2 text-sm leading-relaxed">{f.text}</p>
             </div>
@@ -178,7 +177,10 @@ export default async function Home() {
                       {s.staff.map((ss) => {
                         const price = ss.customPrice ?? s.price;
                         return (
-                          <li key={ss.staff.id} className="flex items-start justify-between gap-3 text-sm">
+                          <li
+                            key={ss.staff.id}
+                            className="flex items-start justify-between gap-3 text-sm"
+                          >
                             <span className="text-ivory-dim">
                               {ss.staff.user.firstName} {ss.staff.user.lastName}
                             </span>
@@ -238,10 +240,7 @@ export default async function Home() {
                   className="group mt-5 inline-flex items-center gap-1.5 self-start text-sm font-medium text-brass-300 transition-colors duration-200 hover:text-brass-200"
                 >
                   Book with {s.user.firstName}
-                  <ArrowRight
-                    size={15}
-                    className="nudge-x"
-                  />
+                  <ArrowRight size={15} className="nudge-x" />
                 </Link>
               </div>
             </Reveal>
@@ -275,16 +274,22 @@ export default async function Home() {
         </Reveal>
         <ul className="mt-8 grid gap-4 sm:grid-cols-3">
           {[
-            { title: '20% down', text: 'A small downpayment holds your chair. It comes off your total at the shop.' },
-            { title: 'Free moves', text: 'Reschedule or cancel from your dashboard — no calls, no awkwardness.' },
-            { title: '15-minute grace', text: 'Running late? Your chair holds 15 minutes past start before release.' },
+            {
+              title: '20% down',
+              text: 'A small downpayment holds your chair. It comes off your total at the shop.',
+            },
+            {
+              title: 'Free moves',
+              text: 'Reschedule or cancel from your dashboard — no calls, no awkwardness.',
+            },
+            {
+              title: '15-minute grace',
+              text: 'Running late? Your chair holds 15 minutes past start before release.',
+            },
           ].map((r, i) => (
             <Reveal as="li" key={r.title} delay={i * 70} className="h-full">
               <div className="card lift-hover h-full border-l-2">
-                <p className="font-medium">
-                  <span className="mr-2 text-ivory-dim/50" data-numeric>0{i + 1}</span>
-                  {r.title}
-                </p>
+                <p className="font-medium">{r.title}</p>
                 <p className="muted mt-2 text-sm leading-relaxed">{r.text}</p>
               </div>
             </Reveal>
