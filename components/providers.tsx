@@ -16,7 +16,7 @@ function BrandMark() {
     <Link href="/" className="group flex items-center gap-2.5" data-press>
       <span className="relative block h-9 w-9 overflow-hidden rounded-full">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/barberlogo-icon.jpg" alt="BarberHouse" className="h-full w-full object-cover" />
+        <img src="/barberlogo-icon-v2.jpg" alt="BarberHouse" className="h-full w-full object-cover" />
       </span>
       <span className="flex flex-col leading-none">
         <span className="font-display text-[1.0625rem] tracking-[0.02em]">BarberHouse</span>

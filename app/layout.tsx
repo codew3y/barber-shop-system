@@ -20,7 +20,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "BarberHouse",
   description: "BarberHouse — book barber appointments online",
-  icons: { icon: "/barberlogo-icon.jpg?v=2" },
+  icons: { icon: "/barberlogo-icon-v2.jpg" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
