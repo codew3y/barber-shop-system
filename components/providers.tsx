@@ -14,9 +14,9 @@ import type { Shop } from '@/lib/types';
 function BrandMark() {
   return (
     <Link href="/" className="group flex items-center gap-2.5" data-press>
-      <span className="relative block h-9 w-9 overflow-hidden rounded-2xl">
+      <span className="relative block h-9 w-9 overflow-hidden rounded-full">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/icon.svg" alt="BarberHouse" className="h-full w-full" />
+        <img src="/barberlogo-icon-v2.jpg" alt="BarberHouse" className="h-full w-full object-cover" />
       </span>
       <span className="flex flex-col leading-none">
         <span className="font-display text-[1.0625rem] tracking-[0.02em]">BarberHouse</span>
@@ -98,9 +98,9 @@ function Nav() {
       data-scrolled={scrolled || undefined}
       className="site-header sticky top-0 z-30"
     >
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3.5">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3.5 sm:gap-4 sm:px-5">
         <BrandMark />
-        <nav className="flex items-center gap-3 sm:gap-6">
+        <nav className="flex min-w-0 items-center gap-2 sm:gap-6">
           <Link href="/#services" className={sectionLink(linkActive('services'))}>
             Services
           </Link>
@@ -152,12 +152,12 @@ function Nav() {
             </>
           ) : (
             <>
-              <Link href="/login" className="btn-ghost px-4 py-1.5 text-sm" data-press>
-                <LogIn size={15} />
+              <Link href="/login" className="btn-ghost shrink-0 px-2.5 py-1.5 text-xs sm:px-4 sm:text-sm" data-press>
+                <LogIn size={14} />
                 Sign in
               </Link>
-              <Link href={bookHref} className="btn-primary px-4 py-1.5 text-sm" data-press>
-                <CalendarCheck size={15} />
+              <Link href={bookHref} className="btn-primary shrink-0 px-2.5 py-1.5 text-xs sm:px-4 sm:text-sm" data-press>
+                <CalendarCheck size={14} />
                 Book now
               </Link>
             </>
