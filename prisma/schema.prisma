@@ -72,6 +72,7 @@ model User {
   lastName      String    @map("last_name")
   role          Role
   avatarUrl     String?   @map("avatar_url")
+  isGuest       Boolean   @default(false) @map("is_guest")
   emailVerified Boolean   @default(false) @map("email_verified")
   phoneVerified Boolean   @default(false) @map("phone_verified")
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz

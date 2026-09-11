@@ -18,7 +18,9 @@ export const refreshSchema = z.object({
 
 export const guestSchema = z.object({
   firstName: z.string().min(1).max(100),
-  lastName: z.string().min(1).max(100),
+  // Optional: a guest who gives a single name must not have it duplicated
+  // into the surname, which rendered as "Wence Wence" everywhere.
+  lastName: z.string().max(100).optional(),
   phone: z.string().min(7).max(20),
   email: z.string().email().max(255).optional(),
 });
