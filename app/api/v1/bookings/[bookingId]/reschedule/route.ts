@@ -11,7 +11,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ book
   if ('error' in auth) return auth.error;
   const { bookingId } = await params;
 
-  const limited = rateLimit(req, 'booking-mutate', 20, 60_000);
+  const limited = await rateLimit(req, 'booking-mutate', 20, 60_000);
   if (limited) return limited;
 
   let body: unknown;

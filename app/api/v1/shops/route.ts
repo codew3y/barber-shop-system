@@ -4,7 +4,7 @@ import { rateLimit } from '@/lib/rate-limit';
 import { shopListQuerySchema } from '@/schemas/booking';
 
 export async function GET(req: NextRequest) {
-  const limited = rateLimit(req, 'shops-list', 100, 60_000);
+  const limited = await rateLimit(req, 'shops-list', 100, 60_000);
   if (limited) return limited;
 
   const query = Object.fromEntries(req.nextUrl.searchParams.entries());

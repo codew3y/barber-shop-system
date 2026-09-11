@@ -1,7 +1,5 @@
 export function peso(amount: number | string | { toFixed(n: number): string }): string {
-  return typeof amount === 'object'
-    ? `₱${amount.toFixed(2)}`
-    : `₱${Number(amount).toFixed(2)}`;
+  return typeof amount === 'object' ? `₱${amount.toFixed(2)}` : `₱${Number(amount).toFixed(2)}`;
 }
 
 // Deposit due now (matches the payments API default when the shop
@@ -13,10 +11,24 @@ export function depositFor(amount: number | string, percent = DEFAULT_DEPOSIT_PE
 }
 
 // Display range across barbers: "₱300.00 – ₱350.00", or a single price when uniform.
-export function priceRange(base: number | string, customs: (number | string | null | undefined)[]): string {
+export function priceRange(
+  base: number | string,
+  customs: (number | string | null | undefined)[]
+): string {
   const values = [Number(base), ...customs.filter((c) => c != null).map(Number)];
   const min = Math.min(...values);
   const max = Math.max(...values);
   if (min === max) return peso(min);
   return `₱${min.toFixed(2)} – ₱${max.toFixed(2)}`;
+}
+
+// Customer display name. Guests keep their real name so the shop knows who is
+// in the chair — the suffix only marks that they booked without registering.
+export function customerName(c: {
+  firstName: string;
+  lastName?: string | null;
+  isGuest?: boolean;
+}): string {
+  const full = [c.firstName, c.lastName].filter(Boolean).join(' ').trim();
+  return c.isGuest ? `${full} - Guest` : full;
 }

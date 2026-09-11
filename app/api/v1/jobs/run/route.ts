@@ -1,18 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { runJobs } from '@/services/jobs';
+import { isJobRequestAuthorized } from '@/lib/job-auth';
 
-// Protected job trigger for external schedulers.
-// Set INTERNAL_JOB_KEY; requests must send it as X-Internal-Key.
-// (Without a key configured, only non-production may trigger.)
-export async function POST(req: NextRequest) {
-  const configured = process.env.INTERNAL_JOB_KEY;
-  if (configured) {
-    if (req.headers.get('X-Internal-Key') !== configured) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-  } else if (process.env.NODE_ENV === 'production') {
-    return NextResponse.json({ error: 'Job runner not configured' }, { status: 503 });
+// Releases expired holds, sends reminders, marks no-shows.
+// Triggered by Vercel Cron (see vercel.json) or any external scheduler.
+// The authorization rules live in lib/job-auth.ts so they can be tested.
+async function handle(req: NextRequest) {
+  const auth = isJobRequestAuthorized({
+    internalKey: process.env.INTERNAL_JOB_KEY,
+    cronSecret: process.env.CRON_SECRET,
+    headerInternalKey: req.headers.get('X-Internal-Key'),
+    headerAuthorization: req.headers.get('authorization'),
+    isProduction: process.env.NODE_ENV === 'production',
+  });
+  if (!auth.ok) {
+    const error = auth.status === 503 ? 'Job runner not configured' : 'Unauthorized';
+    return NextResponse.json({ error }, { status: auth.status });
   }
-  const summary = await runJobs();
-  return NextResponse.json(summary);
+  return NextResponse.json(await runJobs());
+}
+
+export async function POST(req: NextRequest) {
+  return handle(req);
+}
+
+// Vercel Cron issues GET requests, so both verbs share the handler.
+export async function GET(req: NextRequest) {
+  return handle(req);
 }

@@ -8,7 +8,7 @@ import { rateLimit } from '@/lib/rate-limit';
 import { registerSchema } from '@/schemas/auth';
 
 export async function POST(req: NextRequest) {
-  const limited = rateLimit(req, 'auth-register', 5, 60_000);
+  const limited = await rateLimit(req, 'auth-register', 5, 60_000);
   if (limited) return limited;
 
   let body: unknown;

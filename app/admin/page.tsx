@@ -7,7 +7,7 @@ import { Check, Plus, X } from 'lucide-react';
 import { apiFetch, apiJson } from '@/lib/api-client';
 import { useAuthStore } from '@/stores/authStore';
 import { Tabs } from '@/components/ui/Tabs';
-import { peso } from '@/lib/format';
+import { customerName, peso } from '@/lib/format';
 
 type Tab = 'overview' | 'bookings' | 'staff' | 'services' | 'settings';
 
@@ -133,7 +133,7 @@ function Bookings({ shopId }: { shopId: string }) {
   const { data } = useQuery({
     queryKey: ['admin-bookings', shopId, date],
     queryFn: () =>
-      apiJson<{ bookings: { id: string; status: string; startAt: string; service: { name: string }; customer: { firstName: string; lastName: string }; staff: { user: { firstName: string; lastName: string } } }[] }>(
+      apiJson<{ bookings: { id: string; status: string; startAt: string; service: { name: string }; customer: { firstName: string; lastName: string; isGuest?: boolean }; staff: { user: { firstName: string; lastName: string } } }[] }>(
         `/api/v1/admin/bookings?shopId=${shopId}&date=${date}`
       ),
     refetchInterval: 15_000,
@@ -161,7 +161,7 @@ function Bookings({ shopId }: { shopId: string }) {
               <span className="min-w-0">
                 <span className="block truncate font-medium">{b.service.name}</span>
                 <span className="block truncate text-xs text-ivory-dim/75">
-                  {b.customer.firstName} · with {b.staff.user.firstName}
+                  {customerName(b.customer)} · with {b.staff.user.firstName}
                 </span>
               </span>
             </span>

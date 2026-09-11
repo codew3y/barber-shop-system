@@ -11,13 +11,13 @@ export async function POST(req: NextRequest) {
   const auth = await requireAuth(req);
   if ('error' in auth) return auth.error;
 
-  const limited = rateLimit(req, 'booking-create', 10, 60_000);
+  const limited = await rateLimit(req, 'booking-create', 10, 60_000);
   if (limited) return limited;
 
   const idempotencyKey = req.headers.get('Idempotency-Key');
   if (!idempotencyKey) return jsonError('Idempotency-Key header is required', 400);
   const cacheKey = `${auth.user.id}:${idempotencyKey}`;
-  const cached = getIdempotentResponse(cacheKey);
+  const cached = await getIdempotentResponse(cacheKey);
   if (cached) return NextResponse.json(cached.body, { status: cached.status });
 
   let body: unknown;
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     });
     // No confirmation email here — it goes out once payment confirms
     // (webhook auto-confirm, or staff confirming a manual payment).
-    return setIdempotentResponse(
+    return await setIdempotentResponse(
       cacheKey,
       NextResponse.json({ booking, holdExpiresAt: booking.holdExpiresAt }, { status: 201 })
     );
@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
         data: payload,
         include: { service: true, staff: { include: { user: { select: { firstName: true, lastName: true } } } }, shop: true },
       });
-      return setIdempotentResponse(
+      return await setIdempotentResponse(
         cacheKey,
         NextResponse.json({ booking, holdExpiresAt: booking.holdExpiresAt }, { status: 201 })
       );

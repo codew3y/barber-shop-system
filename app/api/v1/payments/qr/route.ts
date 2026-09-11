@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   const auth = await requireAuth(req);
   if ('error' in auth) return auth.error;
 
-  const limited = rateLimit(req, 'payment-qr', 10, 60_000);
+  const limited = await rateLimit(req, 'payment-qr', 10, 60_000);
   if (limited) return limited;
 
   let body: unknown;

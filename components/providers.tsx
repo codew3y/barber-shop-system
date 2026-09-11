@@ -136,7 +136,7 @@ function Nav() {
                 <span className="flex flex-col leading-tight">
                   <span className="text-xs font-medium">{user.firstName}</span>
                   <span className="text-[0.625rem] uppercase tracking-[0.14em] text-ivory-dim/70">
-                    {user.role}
+                    {user.isGuest ? 'Guest' : user.role}
                   </span>
                 </span>
               </span>
@@ -241,7 +241,14 @@ function Footer() {
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const [client] = useState(() => new QueryClient());
+  const [client] = useState(
+    () =>
+      new QueryClient({
+        // Refetching every query on tab focus made returning to the booking
+        // flow re-request services, staff and slots for no benefit.
+        defaultOptions: { queries: { refetchOnWindowFocus: false, retry: 1 } },
+      })
+  );
   return (
     <QueryClientProvider client={client}>
       <Nav />
