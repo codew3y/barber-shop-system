@@ -19,9 +19,7 @@ export function tzOffsetMinutes(timeZone: string, at: Date): number {
     second: '2-digit',
     hour12: false,
   });
-  const parts = Object.fromEntries(
-    dtf.formatToParts(at).map((p) => [p.type, p.value])
-  );
+  const parts = Object.fromEntries(dtf.formatToParts(at).map((p) => [p.type, p.value]));
   const asUTC = Date.UTC(
     Number(parts.year),
     Number(parts.month) - 1,
@@ -140,11 +138,24 @@ export async function validateSlotAvailability(
   const availabilities = await prisma.availability.findMany({
     where: { staffId, dayOfWeek: local.dow, isActive: true },
   });
-  const withinHours = availabilities.some(
-    (a) => timeToMinutes(a.startTime) <= local.minutes && timeToMinutes(a.endTime) >= endLocal.minutes
+  const windows = availabilities.filter(
+    (a) =>
+      timeToMinutes(a.startTime) <= local.minutes && timeToMinutes(a.endTime) >= endLocal.minutes
   );
-  if (!withinHours) {
+  if (windows.length === 0) {
     return { valid: false, error: 'Staff not available at this time' };
+  }
+
+  // The offered slots step every SLOT_STEP_MINUTES from the window's start,
+  // so a start time that lands between steps is not a real slot. Without this
+  // a crafted request could book at, say, 01:07 — accepted by every other
+  // check, but it straddles two grid slots and desyncs the schedule from the
+  // times the UI offers.
+  const onGrid = windows.some(
+    (a) => (local.minutes - timeToMinutes(a.startTime)) % SLOT_STEP_MINUTES === 0
+  );
+  if (!onGrid) {
+    return { valid: false, error: 'Start time must match an offered slot' };
   }
 
   // Time off

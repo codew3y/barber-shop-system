@@ -6,7 +6,7 @@ import { rateLimit } from '@/lib/rate-limit';
 import { forgotPasswordSchema } from '@/schemas/auth';
 
 export async function POST(req: NextRequest) {
-  const limited = rateLimit(req, 'auth-forgot', 3, 60_000);
+  const limited = await rateLimit(req, 'auth-forgot', 3, 60_000);
   if (limited) return limited;
 
   let body: unknown;

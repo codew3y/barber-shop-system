@@ -16,8 +16,19 @@ export const rescheduleBookingSchema = z.object({
   newStartTime: z.string().datetime(),
 });
 
+// A regex alone accepts impossible dates like 2026-13-45, which JS Date
+// silently rolls over into another month — so the API answered for a date the
+// caller never requested. Round-trip the parse to reject those.
+const calendarDate = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected YYYY-MM-DD')
+  .refine((v) => {
+    const d = new Date(`${v}T00:00:00Z`);
+    return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v;
+  }, 'Not a real calendar date');
+
 export const availabilityQuerySchema = z.object({
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected YYYY-MM-DD'),
+  date: calendarDate,
   serviceId: z.string().uuid(),
 });
 

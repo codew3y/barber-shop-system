@@ -56,7 +56,8 @@ export async function revokeRefreshToken(refreshToken: string): Promise<void> {
     const decoded = verifyRefreshToken(refreshToken);
     if (decoded.jti) await blacklistToken(decoded.jti, REFRESH_TTL_SECONDS);
   } catch {
-    // ignore invalid tokens on logout
+    // Best effort: an invalid token or a Redis outage must not stop someone
+    // logging out. The client discards its tokens either way.
   }
 }
 
