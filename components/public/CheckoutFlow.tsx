@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useBookingStore } from '@/stores/bookingStore';
@@ -9,7 +10,15 @@ import { apiFetch, apiJson } from '@/lib/api-client';
 import { depositFor, peso } from '@/lib/format';
 import { toast } from 'sonner';
 import type { Booking, StaffMember } from '@/lib/types';
-import { ArrowLeft, ArrowRight, CalendarClock, Check, ClipboardCheck, QrCode, Scissors } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  CalendarClock,
+  Check,
+  ClipboardCheck,
+  QrCode,
+  Scissors,
+} from 'lucide-react';
 import { BarberServicePicker } from './BarberServicePicker';
 import { SlotPicker } from './SlotPicker';
 import { QrPay } from './QrPay';
@@ -97,7 +106,10 @@ function TicketRow({
   total?: boolean;
 }) {
   return (
-    <div className={`flex items-baseline gap-3 ${total ? 'pt-3' : ''}`} style={total ? { borderTop: '1px solid var(--line)' } : undefined}>
+    <div
+      className={`flex items-baseline gap-3 ${total ? 'pt-3' : ''}`}
+      style={total ? { borderTop: '1px solid var(--line)' } : undefined}
+    >
       <dt className="text-sm text-ivory-dim">{label}</dt>
       <span className="mb-1 h-px flex-1 border-b border-dotted border-ivory/15" />
       <dd
@@ -110,10 +122,30 @@ function TicketRow({
   );
 }
 
-export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: string; shopName: string; initialStaffId?: string }) {
+export function CheckoutFlow({
+  shopId,
+  shopName,
+  initialStaffId,
+}: {
+  shopId: string;
+  shopName: string;
+  initialStaffId?: string;
+}) {
   const router = useRouter();
-  const { service, staff, slot, step, start, setService, setStaff, clearStaff, setSlot, setStep, reset } =
-    useBookingStore();
+  const queryClient = useQueryClient();
+  const {
+    service,
+    staff,
+    slot,
+    step,
+    start,
+    setService,
+    setStaff,
+    clearStaff,
+    setSlot,
+    setStep,
+    reset,
+  } = useBookingStore();
   const { user, setSession } = useAuthStore();
   const [notes, setNotes] = useState('');
   const [guest, setGuest] = useState({ name: '', phone: '', email: '' });
@@ -166,7 +198,10 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
     async function init() {
       if (initialStaffId) {
         try {
-          const data = await apiJson<{ staff: StaffMember[] }>(`/api/v1/shops/${shopId}/staff`);
+          const data = await queryClient.fetchQuery({
+            queryKey: ['staff', shopId],
+            queryFn: () => apiJson<{ staff: StaffMember[] }>(`/api/v1/shops/${shopId}/staff`),
+          });
           const match = data.staff.find((s) => s.id === initialStaffId) ?? null;
           if (!cancelled) start(shopId, match);
           return;
@@ -181,10 +216,13 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
       cancelled = true;
       reset();
     };
-  }, [shopId, initialStaffId, start, reset]);
+  }, [shopId, initialStaffId, start, reset, queryClient]);
 
   async function ensureAccount(): Promise<boolean> {
-    if (user) return true;
+    // A guest session is not an identity — the next walk-in on this browser
+    // is a different person, so guests always re-enter their details and get
+    // their own account. Only a registered login skips the form.
+    if (user && !user.isGuest) return true;
     const name = guest.name.trim();
     if (
       !name ||
@@ -202,7 +240,7 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
           method: 'POST',
           body: JSON.stringify({
             firstName,
-            lastName: rest.join(' ') || firstName,
+            lastName: rest.join(' '),
             phone: guest.phone,
             email: guest.email,
           }),
@@ -225,20 +263,17 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
     setSubmitting(true);
     try {
       if (!(await ensureAccount())) return;
-      const bookingData = await apiJson<{ booking: Booking }>(
-        '/api/v1/bookings',
-        {
-          method: 'POST',
-          headers: { 'Idempotency-Key': crypto.randomUUID() },
-          body: JSON.stringify({
-            shopId,
-            staffId: staff.id,
-            serviceId: service.id,
-            startTime: slot.startTime,
-            notes: notes || undefined,
-          }),
-        }
-      );
+      const bookingData = await apiJson<{ booking: Booking }>('/api/v1/bookings', {
+        method: 'POST',
+        headers: { 'Idempotency-Key': crypto.randomUUID() },
+        body: JSON.stringify({
+          shopId,
+          staffId: staff.id,
+          serviceId: service.id,
+          startTime: slot.startTime,
+          notes: notes || undefined,
+        }),
+      });
       const bookingId = bookingData.booking.id;
       const intentRes = await apiFetch('/api/v1/payments/create-intent', {
         method: 'POST',
@@ -249,7 +284,12 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
           method: 'POST',
           body: JSON.stringify({ bookingId, type: 'deposit' }),
         });
-        setPayment({ bookingId, amount: Number(qr.amount), reference: qr.reference, qrImageUrl: null });
+        setPayment({
+          bookingId,
+          amount: Number(qr.amount),
+          reference: qr.reference,
+          qrImageUrl: null,
+        });
         return;
       }
       if (!intentRes.ok) {
@@ -257,7 +297,12 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
         throw new Error(errBody.error ?? `Payment failed (${intentRes.status})`);
       }
       const intent = (await intentRes.json()) as { amount: string; qrImageUrl: string };
-      setPayment({ bookingId, amount: Number(intent.amount), reference: null, qrImageUrl: intent.qrImageUrl });
+      setPayment({
+        bookingId,
+        amount: Number(intent.amount),
+        reference: null,
+        qrImageUrl: intent.qrImageUrl,
+      });
     } catch (e) {
       const message = (e as Error).message;
       setError(message);
@@ -281,7 +326,8 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
   const canContinueDetails = !!service && !!staff;
   const canContinueSlot = !!slot;
 
-  const price = staff?.services?.find((x) => x.service.id === service?.id)?.customPrice ?? service?.price;
+  const price =
+    staff?.services?.find((x) => x.service.id === service?.id)?.customPrice ?? service?.price;
 
   const errorNote = error && (
     <p role="alert" className="mt-4 flex items-start gap-2 text-sm text-ember">
@@ -365,7 +411,7 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
           {/* Guest details + notes */}
           <div className="card order-2 lg:order-1">
             <h2 className="font-display text-xl">Your details</h2>
-            {!user ? (
+            {!user || user.isGuest ? (
               <>
                 <p className="muted mt-1.5 text-sm">
                   Checking out as a guest — name, number, and email for your confirmation. No
@@ -396,7 +442,7 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
               </>
             ) : (
               <p className="muted mt-1.5 text-sm">
-                Booking as {user.firstName} {user.lastName}.
+                Booking as {[user.firstName, user.lastName].filter(Boolean).join(' ')}.
               </p>
             )}
 
@@ -470,8 +516,8 @@ export function CheckoutFlow({ shopId, shopName, initialStaffId }: { shopId: str
             </dl>
 
             <p className="muted mt-5 text-xs leading-relaxed">
-              Downpayments are non-refundable. The balance is settled at the chair. Reschedule
-              or release the chair any time from your dashboard.
+              Downpayments are non-refundable. The balance is settled at the chair. Reschedule or
+              release the chair any time from your dashboard.
             </p>
           </aside>
         </div>

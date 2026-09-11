@@ -68,4 +68,6 @@ export interface PublicUser {
   firstName: string;
   lastName: string;
   role: string;
+  /** Booked without registering. Each guest still gets their own account. */
+  isGuest?: boolean;
 }
