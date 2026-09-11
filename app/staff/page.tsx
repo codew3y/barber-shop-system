@@ -6,7 +6,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Phone, Plus } from 'lucide-react';
 import { apiFetch, apiJson } from '@/lib/api-client';
 import { useAuthStore } from '@/stores/authStore';
-import { peso } from '@/lib/format';
+import { customerName, peso } from '@/lib/format';
 
 interface ScheduleBooking {
   id: string;
@@ -15,7 +15,7 @@ interface ScheduleBooking {
   endAt: string;
   notes: string | null;
   service: { name: string };
-  customer: { firstName: string; lastName: string; phone: string | null };
+  customer: { firstName: string; lastName: string; phone: string | null; isGuest?: boolean };
 }
 
 const NEXT_STATUS: Record<string, { value: string; label: string }[]> = {
@@ -172,9 +172,7 @@ export default function StaffPage() {
                     <span className="min-w-0">
                       <span className="block truncate font-medium">{b.service.name}</span>
                       <span className="mt-0.5 flex flex-wrap items-center gap-x-2.5 text-xs text-ivory-dim/75">
-                        <span>
-                          {b.customer.firstName} {b.customer.lastName}
-                        </span>
+                        <span>{customerName(b.customer)}</span>
                         {b.customer.phone && (
                           <span className="flex items-center gap-1" data-numeric>
                             <Phone size={11} className="text-brass-400" />

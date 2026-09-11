@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
     orderBy: { startAt: 'asc' },
     include: {
       service: { select: { id: true, name: true, durationMinutes: true, price: true } },
-      customer: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
+      customer: { select: { id: true, firstName: true, lastName: true, email: true, phone: true, isGuest: true } },
     },
   });
   return NextResponse.json({ schedule: bookings, staffId: profile.id, shopId: profile.shopId, date });

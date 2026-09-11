@@ -15,6 +15,7 @@ export function publicUser(user: {
   firstName: string;
   lastName: string;
   role: string;
+  isGuest?: boolean;
   avatarUrl: string | null;
   emailVerified: boolean;
   phoneVerified: boolean;

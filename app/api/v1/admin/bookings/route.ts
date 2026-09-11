@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
     take: 100,
     include: {
       service: { select: { name: true } },
-      customer: { select: { firstName: true, lastName: true } },
+      customer: { select: { firstName: true, lastName: true, isGuest: true } },
       staff: { include: { user: { select: { firstName: true, lastName: true } } } },
     },
   });
