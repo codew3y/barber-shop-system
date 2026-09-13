@@ -1,0 +1,42 @@
+name: Run scheduled jobs
+
+# Vercel Hobby only permits cron once per day, but the job runner releases
+# expired booking holds — at daily cadence a dropped hold would block a
+# bookable slot for up to 24 hours. So the schedule lives here instead, and
+# hits the same endpoint Vercel Cron would have. The route accepts
+# X-Internal-Key for exactly this case (see lib/job-auth.ts).
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # so it can be run by hand from the Actions tab
+
+# Never let a slow run overlap the next tick.
+concurrency:
+  group: scheduled-jobs
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger job runner
+        env:
+          APP_URL: ${{ vars.APP_URL || 'https://barberhouseph.vercel.app' }}
+          INTERNAL_JOB_KEY: ${{ secrets.INTERNAL_JOB_KEY }}
+        run: |
+          if [ -z "$INTERNAL_JOB_KEY" ]; then
+            echo "::error::INTERNAL_JOB_KEY secret is not set — the endpoint will reject this call."
+            exit 1
+          fi
+          code=$(curl -sS --max-time 60 -o /tmp/body -w '%{http_code}' \
+            -X POST "$APP_URL/api/v1/jobs/run" \
+            -H "X-Internal-Key: $INTERNAL_JOB_KEY")
+          echo "HTTP $code"
+          cat /tmp/body || true
+          echo
+          if [ "$code" != "200" ]; then
+            echo "::error::Job runner returned $code"
+            exit 1
+          fi
