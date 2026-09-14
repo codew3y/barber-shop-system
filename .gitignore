@@ -36,6 +36,9 @@ yarn-error.log*
 .env*
 !.env.example
 
+# recovered session exports (local only, never commit)
+docs/RECOVERED-*.md
+
 # vercel
 .vercel
 
