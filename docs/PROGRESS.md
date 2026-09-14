@@ -15,6 +15,7 @@
 | M3 — Staff/Admin Dashboard | ✅ Done | 4.1 ✅, 4.2 ✅, 4.3 via 15s polling (WebSocket deferred, push optional) |
 | M4 — Payments & Notifications | ✅ Done | 5.1 ✅ (Stripe code live, needs keys), 5.2 ✅ (prefs deferred), 5.3 ✅ (ICS export; Google sync deferred) |
 | M5 — Security Hardening & QA | ✅ Done | 6.1–6.3 ✅, `docs/SECURITY.md` (CSRF N/A documented, Redis limits + audit fix flagged for launch) |
+| M6 — Deployment & Monitoring | 🔄 Partial | CI gates ✅, Sentry code ✅ (needs DSN), cron ✅; staging/migrations-auto/uptime/docs pending |
 | M3 — Staff/Admin Dashboard | ⬜ | Phase 4 |
 | M4 — Payments & Notifications | ⬜ | Phase 5 |
 | M5 — Security Hardening & QA | ⬜ | Phase 6 |
@@ -77,6 +78,7 @@
 | 2026-09-08 | Editorial landing rebuild (own expression): ghost type + glow hero, stats, services ticker, ritual steps, numbered menu, house-rules band. E2E green, screenshot-verified. |
 | 2026-09-09 | Skill-driven premium pass (Sonner toasts, NumberFlow hero stats, FAQ accordion, hold-to-confirm cancels). Full Before/After review in chat. E2E green, screenshot-verified. |
 | 2026-09-13 | Pulled other-session work (guest accounts, Redis hardening, GH Actions cron, favicon fix). Found prod missing 2 migrations → applied via migrate deploy; verified prod guest checkout + cleaned test row. Note: Vercel Hobby cron limit was failing deploys — now on GitHub Actions. |
+| 2026-09-14 | Phase 7 start: Sentry wired (client/server/edge + global-error + build wrapper, needs DSN) + CI gates workflow (checks + e2e with Postgres/Redis services). Typecheck/lint/build green. |
 | 2026-09-09 | Brass pole logo (header + SVG favicon, Vercel-N ico dropped); booking APIs collapsed to single roundtrips (~0.36s warm) + 60s/15s client caching. E2E green. |
 | 2026-09-09 | In-app Stripe card payments: guest email capture, Proceed-to-payment creates booking + deposit intent, Payment Element + in-page confirm, auto-scroll to Pay (fixed sticky-header overlap). E2E pays with test card green. |
 | 2026-09-09 | Merged other-session redesign (warm ink & brass, Fraunces/Inter, Reveal, skeletons) via rebase: kept their system, preserved our gating/pricing/booking logic, ported FAQ + toasts + hold flow, dropped dead tokens. E2E green, screenshot-verified. |
