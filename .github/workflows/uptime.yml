@@ -21,10 +21,10 @@ jobs:
         run: |
           body=$(curl -sS --max-time 30 "$APP_URL/api/health")
           echo "$body"
-          status=$(echo "$body" | python3 -c "import json,sys; print(json.load(sys.stdin).get('status','?'))")
-          db=$(echo "$body" | python3 -c "import json,sys; print(json.load(sys.stdin).get('checks',{}).get('database','?'))")
-          if [ "$status" != "ok" ] || [ "$db" != "ok" ]; then
-            echo "::error::Uptime probe failed (status=$status database=$db)"
+          hstatus=$(echo "$body" | python3 -c "import json,sys; print(json.load(sys.stdin).get('status','?'))")
+          hdb=$(echo "$body" | python3 -c "import json,sys; print(json.load(sys.stdin).get('checks',{}).get('database','?'))")
+          if [ "$hstatus" != "ok" ] || [ "$hdb" != "ok" ]; then
+            echo "::error::Uptime probe failed (status=$hstatus database=$hdb)"
             exit 1
           fi
           echo "Uptime probe passed (status=ok database=ok)"

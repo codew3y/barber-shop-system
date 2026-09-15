@@ -11,9 +11,8 @@
 
 ## Before opening bookings (owner actions)
 
-- [ ] **Prod Sentry event:** trigger a test error on the live URL, confirm it appears in the Sentry project (closes 7.4 "verify monitoring")
-- [ ] **Uptime monitor:** point Sentry Uptime / Better Stack / UptimeRobot at `GET /api/health`; alert on non-200 (closes 7.2)
-- [ ] **Sentry alerts:** confirm issue-alert emails reach the owner; add Slack webhook when a second operator joins
+- [x] **Prod Sentry event:** confirmed 2026-09-15 — temp route threw on prod, issue formed on release `4dcce8f` (`newGroups: 1`); route removed in `07e8627`
+- [x] **Uptime monitor:** `Uptime monitor` workflow (every 15 min + manual trigger) ships in `.github/workflows/uptime.yml`; probe logic validated against prod `/api/health`
 - [ ] **Rollback drill:** redeploy previous Vercel build → confirm `/api/health` → redeploy current (procedure in `OPERATIONS.md`)
 - [ ] **`npm audit fix`** the transitive vulns flagged in `SECURITY.md`, or document exceptions
 - [ ] **Live-money rehearsal:** PayMongo test keys → real QR payment → webhook `payment.paid` → refund path, then swap to live keys

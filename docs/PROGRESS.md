@@ -85,6 +85,8 @@
 | 2026-09-08 | Completed Phase 6 (M5): security headers, free-text sanitization, wider rate limits; 11/11 RBAC/IDOR matrix; 8-way race proves no double-booking; axe clean; `docs/SECURITY.md`. Lint 0 errors, build + e2e green. |
 | 2026-09-08 | Live data layer: Neon Postgres (btree_gist ✓, 4 migrations, seeded) + Upstash Redis verified; fixed pasted redis-cli fragment into rediss:// URL; app serves BarberHouse end-to-end from Neon. |
 | 2026-09-15 | Phase 7 push: Sentry DSNs set (local + Vercel) + redeploy; added `instrumentation.ts` (server/edge init) + `/api/health` (db/redis probe) + gated sourcemap upload on `SENTRY_AUTH_TOKEN`; wrote `API.md`, `OPERATIONS.md`, `USER-GUIDE.md`, `PRIVACY.md`, `LAUNCH.md`; verified local — typecheck clean, lint 0 errors, 26/26 tests, 8-way race 1×201/7×409, 11/11 authz. Prod `.env` untouched (local run used env overrides). Noted future: `middleware`→`proxy` rename, `@sentry/nextjs/config` import. |
+| 2026-09-15 | Prod `/api/health` verified live (`status ok`, db + redis ok) after `325590b` deploy. |
+| 2026-09-15 | Closed 1–2: temp `/api/sentry-test` threw on prod → Sentry issue confirmed (`newGroups: 1` on release `4dcce8f`) → route removed (`07e8627`); `Uptime monitor` workflow added (every 15 min + manual). Still open: rollback drill, launch window. |
 
 ## Quickstart (fresh machine / resume)
 
