@@ -220,7 +220,7 @@ A production-grade barber shop booking system with multi-tenant support, real-ti
 ### Step 7.2: Monitoring & Alerting
 - [x] Set up error tracking (Sentry)
 - [x] Configure application monitoring (Sentry + `/api/health` + Vercel logs)
-- [ ] Set up uptime monitoring (endpoint ships; wire external monitor per `OPERATIONS.md`)
+- [x] Set up uptime monitoring (`Uptime monitor` workflow polls `/api/health` every 15 min; fails loudly → GitHub notifies owner)
 - [ ] Configure alerting (PagerDuty/Slack — Sentry email covers solo-operator launch)
 - [x] Implement logging aggregation (Vercel logs + `audit_log` + job summaries)
 
@@ -233,7 +233,7 @@ A production-grade barber shop booking system with multi-tenant support, real-ti
 
 ### Step 7.4: Launch Preparation
 - [x] Perform production load test (8-way race 1×201/7×409 + 11/11 authz, re-verified 2026-09-15)
-- [ ] Verify all monitoring working (local ✅; prod Sentry event confirm pending — see `docs/LAUNCH.md`)
+- [x] Verify all monitoring working (prod `/api/health` ok; prod test error confirmed as Sentry issue on release `4dcce8f`, `newGroups: 1`)
 - [ ] Test rollback procedure (documented in `docs/OPERATIONS.md`; drill pending)
 - [x] Prepare launch checklist (`docs/LAUNCH.md`)
 - [ ] Schedule launch window
