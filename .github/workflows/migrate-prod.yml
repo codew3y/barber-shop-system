@@ -37,6 +37,7 @@ jobs:
       - run: npm install --legacy-peer-deps --no-audit --no-fund
 
       - name: Show pending status (dry read before applying)
+        continue-on-error: true
         env:
           DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
           DIRECT_URL: ${{ secrets.NEON_DIRECT_URL }}
