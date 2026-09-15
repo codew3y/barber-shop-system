@@ -1,0 +1,30 @@
+name: Uptime monitor
+
+# Solo-operator uptime monitor: polls /api/health and fails loudly on
+# non-200 or database-down so GitHub notifies the owner. Heavier than
+# Sentry Uptime / Better Stack but needs no extra account; migrate when
+# paging or multi-region checks matter.
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch: # run by hand from the Actions tab to test
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Probe health endpoint
+        env:
+          APP_URL: ${{ vars.APP_URL || 'https://barberhouseph.vercel.app' }}
+        run: |
+          body=$(curl -sS --max-time 30 "$APP_URL/api/health")
+          echo "$body"
+          status=$(echo "$body" | python3 -c "import json,sys; print(json.load(sys.stdin).get('status','?'))")
+          db=$(echo "$body" | python3 -c "import json,sys; print(json.load(sys.stdin).get('checks',{}).get('database','?'))")
+          if [ "$status" != "ok" ] || [ "$db" != "ok" ]; then
+            echo "::error::Uptime probe failed (status=$status database=$db)"
+            exit 1
+          fi
+          echo "Uptime probe passed (status=ok database=ok)"
