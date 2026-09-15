@@ -85,6 +85,8 @@ model User {
   cancelledBooking Booking[]      @relation("CancelledBy")
   approvedTimeOff  TimeOff[]      @relation("ApprovedBy")
   notifications    Notification[]
+  pushSubscriptions PushSubscription[]
+  notificationPreference NotificationPreference?
   reviews          Review[]       @relation("CustomerReviews")
   auditLogs        AuditLog[]     @relation("ActorLogs")
 
@@ -359,4 +361,34 @@ model AuditLog {
   @@index([action])
   @@index([createdAt])
   @@map("audit_log")
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_subscriptions")
+}
+
+model NotificationPreference {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @unique @map("user_id") @db.Uuid
+  emailConfirmations Boolean @default(true) @map("email_confirmations")
+  emailReminders    Boolean  @default(true) @map("email_reminders")
+  pushConfirmations Boolean  @default(true) @map("push_confirmations")
+  pushReminders     Boolean  @default(true) @map("push_reminders")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
 }

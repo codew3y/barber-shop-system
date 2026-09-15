@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Phone, Plus } from 'lucide-react';
 import { apiFetch, apiJson } from '@/lib/api-client';
+import { useLiveEvents } from '@/hooks/useLiveEvents';
 import { useAuthStore } from '@/stores/authStore';
 import { customerName, peso } from '@/lib/format';
 
@@ -51,8 +52,9 @@ export default function StaffPage() {
     queryKey: ['staff-schedule', date],
     queryFn: () => apiJson<{ schedule: ScheduleBooking[] }>(`/api/v1/staff/schedule?date=${date}`),
     enabled: ready && !!user,
-    refetchInterval: 15_000, // live-ish schedule without WebSocket (Phase 4.3)
+    refetchInterval: 60_000, // fallback only — SSE (below) is the live path
   });
+  useLiveEvents([['staff-schedule']], ready && !!user);
 
   const timeOff = useQuery({
     queryKey: ['staff-timeoff'],

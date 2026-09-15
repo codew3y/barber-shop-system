@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyWebhookSignature, type PmWebhookEvent } from '@/lib/paymongo';
 import { queueBookingNotifications } from '@/services/notificationService';
+import { emitShopEvent } from '@/lib/events';
 
 async function findPayment(event: PmWebhookEvent) {
   // Primary: match by intent id stored at create-intent time.
@@ -58,6 +59,7 @@ export async function POST(req: NextRequest) {
           data: { status: 'confirmed', holdExpiresAt: null },
         });
         void queueBookingNotifications(booking.id, 'booking_confirmed');
+        emitShopEvent({ type: 'booking.confirmed', shopId: booking.shopId, bookingId: booking.id, customerId: booking.customerId, staffId: booking.staffId, status: 'confirmed' });
       }
     }
   } else if (event.type === 'payment.failed' || event.type === 'qrph.expired') {

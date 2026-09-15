@@ -6,6 +6,7 @@ import { getIdempotentResponse, setIdempotentResponse } from '@/lib/idempotency'
 import { HOLD_MINUTES, validateSlotAvailability } from '@/services/bookingService';
 import { cleanOptional } from '@/lib/sanitize';
 import { createBookingSchema } from '@/schemas/booking';
+import { emitShopEvent } from '@/lib/events';
 
 export async function POST(req: NextRequest) {
   const auth = await requireAuth(req);
@@ -62,6 +63,7 @@ export async function POST(req: NextRequest) {
     });
     // No confirmation email here — it goes out once payment confirms
     // (webhook auto-confirm, or staff confirming a manual payment).
+    emitShopEvent({ type: 'booking.created', shopId, bookingId: booking.id, customerId: booking.customerId, staffId });
     return await setIdempotentResponse(
       cacheKey,
       NextResponse.json({ booking, holdExpiresAt: booking.holdExpiresAt }, { status: 201 })
@@ -94,6 +96,7 @@ export async function POST(req: NextRequest) {
         data: payload,
         include: { service: true, staff: { include: { user: { select: { firstName: true, lastName: true } } } }, shop: true },
       });
+      emitShopEvent({ type: 'booking.created', shopId, bookingId: booking.id, customerId: booking.customerId, staffId });
       return await setIdempotentResponse(
         cacheKey,
         NextResponse.json({ booking, holdExpiresAt: booking.holdExpiresAt }, { status: 201 })
