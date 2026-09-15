@@ -12,7 +12,7 @@ Upstash.
 - Auth: JWT access (15m) + rotating refresh (7d, reuse detection), bcrypt-12, RBAC
 - Payments: PayMongo QR Ph (dynamic per-transaction QR)
 - Notifications: SMTP via Nodemailer, in-app toasts
-- Monitoring: Sentry (needs DSN), GitHub Actions (CI gates + scheduled jobs)
+- Monitoring: Sentry (DSN set, `instrumentation.ts` + `/api/health`), GitHub Actions (CI gates + scheduled jobs)
 
 ## Quickstart
 
@@ -50,10 +50,15 @@ Local dev needs no keys (matches compose credentials). Live money needs
 
 ## Project docs (`docs/`)
 
-- `PROJECT.md` — build spec with phase checkboxes (Phase 7 in progress)
+- `PROJECT.md` — build spec with phase checkboxes (Phase 7 near-done)
 - `PROGRESS.md` — session log, single source of truth for "where are we?"
 - `PHASE-1-RESEARCH.md` / `PHASE-2-ARCHITECTURE.md` — M0/M1 evidence
 - `SECURITY.md` — security findings and launch notes
+- `API.md` — endpoint reference (`/api/v1` + `/api/health`)
+- `OPERATIONS.md` — runbook: deploy, migrations, jobs, monitoring, rollback
+- `USER-GUIDE.md` — customer/staff/admin how-tos + payments policy
+- `PRIVACY.md` — data collection, retention, rights
+- `LAUNCH.md` — launch checklist with verification evidence
 
 ## Deploy notes
 
