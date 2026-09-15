@@ -5,7 +5,7 @@
 
 ## Current Standing
 
-**Phase 3 in progress** — Auth & Core Booking MVP (M2). Phases 1–2 approved and done.
+**Phase 7 in progress** — Deployment & Monitoring (M6). Phases 1–6 done.
 
 | Milestone | Status | Evidence |
 |-----------|--------|----------|
@@ -15,7 +15,7 @@
 | M3 — Staff/Admin Dashboard | ✅ Done | 4.1 ✅, 4.2 ✅, 4.3 via 15s polling (WebSocket deferred, push optional) |
 | M4 — Payments & Notifications | ✅ Done | 5.1 ✅ (Stripe code live, needs keys), 5.2 ✅ (prefs deferred), 5.3 ✅ (ICS export; Google sync deferred) |
 | M5 — Security Hardening & QA | ✅ Done | 6.1–6.3 ✅, `docs/SECURITY.md` (CSRF N/A documented, Redis limits + audit fix flagged for launch) |
-| M6 — Deployment & Monitoring | 🔄 Partial | CI gates ✅, Sentry code ✅ (needs DSN), cron ✅; staging/migrations-auto/uptime/docs pending |
+| M6 — Deployment & Monitoring | 🔄 Near-done | Sentry DSN set (local + Vercel) + `instrumentation.ts`, `/api/health`, CI gates ✅, cron ✅, 7.3 docs ✅, race/authz re-verified 2026-09-15; uptime-monitor wiring, prod Sentry confirm, rollback drill, launch window pending |
 | M3 — Staff/Admin Dashboard | ⬜ | Phase 4 |
 | M4 — Payments & Notifications | ⬜ | Phase 5 |
 | M5 — Security Hardening & QA | ⬜ | Phase 6 |
@@ -84,6 +84,7 @@
 | 2026-09-09 | Merged other-session redesign (warm ink & brass, Fraunces/Inter, Reveal, skeletons) via rebase: kept their system, preserved our gating/pricing/booking logic, ported FAQ + toasts + hold flow, dropped dead tokens. E2E green, screenshot-verified. |
 | 2026-09-08 | Completed Phase 6 (M5): security headers, free-text sanitization, wider rate limits; 11/11 RBAC/IDOR matrix; 8-way race proves no double-booking; axe clean; `docs/SECURITY.md`. Lint 0 errors, build + e2e green. |
 | 2026-09-08 | Live data layer: Neon Postgres (btree_gist ✓, 4 migrations, seeded) + Upstash Redis verified; fixed pasted redis-cli fragment into rediss:// URL; app serves BarberHouse end-to-end from Neon. |
+| 2026-09-15 | Phase 7 push: Sentry DSNs set (local + Vercel) + redeploy; added `instrumentation.ts` (server/edge init) + `/api/health` (db/redis probe) + gated sourcemap upload on `SENTRY_AUTH_TOKEN`; wrote `API.md`, `OPERATIONS.md`, `USER-GUIDE.md`, `PRIVACY.md`, `LAUNCH.md`; verified local — typecheck clean, lint 0 errors, 26/26 tests, 8-way race 1×201/7×409, 11/11 authz. Prod `.env` untouched (local run used env overrides). Noted future: `middleware`→`proxy` rename, `@sentry/nextjs/config` import. |
 
 ## Quickstart (fresh machine / resume)
 

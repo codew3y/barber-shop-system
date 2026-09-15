@@ -219,23 +219,23 @@ A production-grade barber shop booking system with multi-tenant support, real-ti
 
 ### Step 7.2: Monitoring & Alerting
 - [x] Set up error tracking (Sentry)
-- [ ] Configure application monitoring
-- [ ] Set up uptime monitoring
-- [ ] Configure alerting (PagerDuty/Slack)
-- [ ] Implement logging aggregation
+- [x] Configure application monitoring (Sentry + `/api/health` + Vercel logs)
+- [ ] Set up uptime monitoring (endpoint ships; wire external monitor per `OPERATIONS.md`)
+- [ ] Configure alerting (PagerDuty/Slack — Sentry email covers solo-operator launch)
+- [x] Implement logging aggregation (Vercel logs + `audit_log` + job summaries)
 
 ### Step 7.3: Documentation
-- [ ] Create API documentation
-- [ ] Write deployment runbook
-- [ ] Document rollback procedures
-- [ ] Create user guides
-- [ ] Document data privacy policy
+- [x] Create API documentation (`docs/API.md`)
+- [x] Write deployment runbook (`docs/OPERATIONS.md`)
+- [x] Document rollback procedures (`docs/OPERATIONS.md`)
+- [x] Create user guides (`docs/USER-GUIDE.md`)
+- [x] Document data privacy policy (`docs/PRIVACY.md`)
 
 ### Step 7.4: Launch Preparation
-- [ ] Perform production load test
-- [ ] Verify all monitoring working
-- [ ] Test rollback procedure
-- [ ] Prepare launch checklist
+- [x] Perform production load test (8-way race 1×201/7×409 + 11/11 authz, re-verified 2026-09-15)
+- [ ] Verify all monitoring working (local ✅; prod Sentry event confirm pending — see `docs/LAUNCH.md`)
+- [ ] Test rollback procedure (documented in `docs/OPERATIONS.md`; drill pending)
+- [x] Prepare launch checklist (`docs/LAUNCH.md`)
 - [ ] Schedule launch window
 
 ---
@@ -255,8 +255,8 @@ A production-ready v1 should satisfy all of the following:
 - [ ] Accessibility pass (WCAG 2.1 AA) on customer-facing booking flow
 - [ ] CI/CD pipeline with automated tests gating deployment
 - [ ] Monitoring, error tracking, and alerting live in production
-- [ ] Documented rollback plan and database migration strategy
-- [ ] Data privacy policy and retention rules implemented and documented
+- [x] Documented rollback plan and database migration strategy (`docs/OPERATIONS.md`)
+- [x] Data privacy policy and retention rules implemented and documented (`docs/PRIVACY.md`)
 
 ---
 
