@@ -8,6 +8,7 @@ import { ArrowUpRight, CalendarX2 } from 'lucide-react';
 import { apiFetch, apiJson } from '@/lib/api-client';
 import { useAuthStore } from '@/stores/authStore';
 import { PayNow } from '@/components/public/PayNow';
+import { NotificationSettings } from '@/components/NotificationSettings';
 import { toast } from 'sonner';
 import type { Booking } from '@/lib/types';
 
@@ -187,6 +188,8 @@ export default function DashboardPage() {
           </ul>
         )}
       </section>
+
+      <NotificationSettings />
     </div>
   );
 }

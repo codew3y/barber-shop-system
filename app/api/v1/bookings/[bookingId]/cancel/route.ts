@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { requireAuth, jsonError } from '@/lib/api';
 import { canActOnBooking } from '@/services/bookingService';
 import { queueBookingNotifications } from '@/services/notificationService';
+import { emitShopEvent } from '@/lib/events';
 import { cleanOptional } from '@/lib/sanitize';
 import { rateLimit } from '@/lib/rate-limit';
 import { cancelBookingSchema } from '@/schemas/booking';
@@ -60,5 +61,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ book
   });
   // Refund processing lands in Phase 5; cancellation frees the slot now.
   void queueBookingNotifications(bookingId, 'booking_cancelled');
+  emitShopEvent({ type: 'booking.cancelled', shopId: booking.shopId, bookingId, customerId: booking.customerId, staffId: booking.staffId, status: 'cancelled' });
   return NextResponse.json({ booking: updated });
 }

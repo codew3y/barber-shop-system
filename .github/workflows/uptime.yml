@@ -28,3 +28,16 @@ jobs:
             exit 1
           fi
           echo "Uptime probe passed (status=ok database=ok)"
+
+      - name: Notify Slack on failure
+        if: failure()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "SLACK_WEBHOOK_URL not set — skipping Slack alert (GitHub already notifies on failure)."
+            exit 0
+          fi
+          curl -sS --max-time 30 -X POST "$SLACK_WEBHOOK_URL" \
+            -H 'content-type: application/json' \
+            -d '{"text":":rotating_light: BarberHouse uptime probe FAILED — check Vercel/Neon and Sentry."}'

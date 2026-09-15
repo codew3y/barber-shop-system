@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { requireRole, jsonError } from '@/lib/api';
 import { isShopAdmin } from '@/lib/staff-scope';
 import { updateBookingStatusSchema } from '@/schemas/staff';
+import { emitShopEvent } from '@/lib/events';
 
 const ALLOWED: Record<string, string[]> = {
   pending: ['confirmed', 'cancelled', 'no_show'],
@@ -67,5 +68,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ book
     const { queueBookingNotifications } = await import('@/services/notificationService');
     void queueBookingNotifications(bookingId, 'booking_confirmed');
   }
+  emitShopEvent({
+    type: parsed.data.status === 'confirmed' ? 'booking.confirmed' : parsed.data.status === 'cancelled' ? 'booking.cancelled' : 'booking.status',
+    shopId: booking.shopId,
+    bookingId,
+    customerId: booking.customerId,
+    staffId: booking.staffId,
+    status: parsed.data.status,
+  });
   return NextResponse.json({ booking: updated });
 }

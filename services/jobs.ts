@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { queueBookingNotifications, type BookingEvent } from './notificationService';
+import { emitShopEvent } from '@/lib/events';
 
 export interface JobSummary {
   holdsReleased: number;
@@ -89,6 +90,7 @@ export async function detectNoShows(now = new Date()): Promise<number> {
       where: { staffId_serviceId: { staffId: b.staffId, serviceId: b.serviceId } },
     });
     await prisma.booking.update({ where: { id: b.id }, data: { status: 'no_show' } });
+    emitShopEvent({ type: 'booking.no_show', shopId: b.shopId, bookingId: b.id, customerId: b.customerId, staffId: b.staffId, status: 'no_show' });
     await prisma.payment.create({
       data: {
         bookingId: b.id,

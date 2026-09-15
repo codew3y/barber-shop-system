@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, Plus, X } from 'lucide-react';
 import { apiFetch, apiJson } from '@/lib/api-client';
+import { useLiveEvents } from '@/hooks/useLiveEvents';
 import { useAuthStore } from '@/stores/authStore';
 import { Tabs } from '@/components/ui/Tabs';
 import { customerName, peso } from '@/lib/format';
@@ -136,8 +137,9 @@ function Bookings({ shopId }: { shopId: string }) {
       apiJson<{ bookings: { id: string; status: string; startAt: string; service: { name: string }; customer: { firstName: string; lastName: string; isGuest?: boolean }; staff: { user: { firstName: string; lastName: string } } }[] }>(
         `/api/v1/admin/bookings?shopId=${shopId}&date=${date}`
       ),
-    refetchInterval: 15_000,
+    refetchInterval: 60_000, // fallback only — SSE is the live path
   });
+  useLiveEvents([['admin-bookings']]);
   async function cancel(id: string) {
     await apiFetch(`/api/v1/bookings/${id}/cancel`, { method: 'PUT', body: '{}' });
     queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
