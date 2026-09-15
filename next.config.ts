@@ -1,5 +1,5 @@
 import type { NextConfig } from "next";
-import { withSentryConfig } from "@sentry/nextjs";
+import { withSentryConfig } from "@sentry/nextjs/config";
 
 const nextConfig: NextConfig = {
   /* config options here */
@@ -8,9 +8,12 @@ const nextConfig: NextConfig = {
 };
 
 export default withSentryConfig(nextConfig, {
-  // Skip sourcemap upload when no DSN is configured (local dev).
+  // Only upload sourcemaps when an auth token is configured (prod with
+  // SENTRY_AUTH_TOKEN). Without it the upload step fails the build, so
+  // local dev and token-less environments skip it and still report errors
+  // via the DSN at runtime.
   sourcemaps: {
-    disable: !process.env.SENTRY_DSN && !process.env.NEXT_PUBLIC_SENTRY_DSN,
+    disable: !process.env.SENTRY_AUTH_TOKEN,
   },
   silent: true,
 });
