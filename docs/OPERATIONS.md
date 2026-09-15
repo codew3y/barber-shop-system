@@ -10,9 +10,22 @@ Vercel (web) + Neon (Postgres) + Upstash (Redis).
 | Local | `http://localhost:3000` | Docker Postgres/Redis (`docker compose up -d`) | No keys needed; matches `docker-compose.yml` creds. |
 | Prod | `https://barberhouseph.vercel.app` | Neon + Upstash | All secrets in Vercel env. |
 
-There is no separate staging environment (deliberate, Phase 7): Vercel
-preview deployments + `migrate deploy` against Neon are the pre-prod gate.
-Revisit when a second Neon branch is affordable.
+There is no separate staging environment yet. Vercel preview deployments
+give you throwaway web frontends per PR, but they still point at prod Neon
+unless a staging database exists. To add staging (30 min, owner-side):
+
+1. Neon dashboard → Branches → **Create branch** `staging` (optionally with
+   a data snapshot from prod).
+2. Create a second Upstash database (or reuse prod Redis — staging traffic
+   is yours alone, key collisions are unlikely but possible).
+3. Vercel → Settings → Environment Variables → add the staging
+   `DATABASE_URL` / `DIRECT_URL` / `REDIS_URL` scoped to **Preview**, plus
+   test (not live) `PAYMONGO_*` keys and a separate Sentry project DSN.
+4. On each PR, Vercel posts a preview URL running the branch code against
+   staging data. Run `npx prisma migrate deploy` with the staging URLs
+   before opening the preview.
+
+Until then, preview deploys + local docker remain the pre-prod gate.
 
 ## Required prod env vars (Vercel)
 
@@ -26,17 +39,22 @@ Revisit when a second Neon branch is affordable.
 | `SMTP_HOST/PORT/SECURE/USER/PASS/FROM` | Gmail SMTP delivery. |
 | `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` | Error tracking (server/client). |
 | `SENTRY_AUTH_TOKEN` | Optional; enables sourcemap upload at build. Without it builds still succeed (upload disabled). |
+| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | Web Push signing. Generate: `node -e "console.log(require('web-push').generateVAPIDKeys())"`. |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Same as `VAPID_PUBLIC_KEY`, exposed to browsers for subscriptions. |
+| `SLACK_WEBHOOK_URL` | Optional (GitHub secret, not Vercel env); posts uptime-probe failures to Slack. |
 
 ## Deploy
 
 1. Merge to `main` → GitHub Actions CI must pass (typecheck, lint, unit, build, e2e) → Vercel auto-deploys.
 2. If the merge contains a Prisma migration, apply it to Neon **before or
-   immediately after** deploy:
+   immediately after** deploy — either via CLI:
    ```bash
    DATABASE_URL="<neon-pooled>" DIRECT_URL="<neon-direct>" npx prisma migrate deploy
    ```
-   One missed migration = 500s on affected routes. Migrations are manual
-   by design (see "Why not automated" below).
+   or via Actions tab → **Migrate production database** → Run workflow →
+   type `migrate` (needs `NEON_DATABASE_URL` / `NEON_DIRECT_URL` repo
+   secrets). One missed migration = 500s on affected routes. Migrations
+   stay off the Vercel build by design (see "Why not automated" below).
 3. Verify: `GET /api/health` → `200 {"status":"ok"}`; Sentry release shows no new issues; run one guest checkout.
 
 ## Background jobs

@@ -25,8 +25,15 @@
 - **Settings:** hours, lead time, reminder opt-outs.
 - **Time off:** approve staff requests, block shop-wide dates (holidays).
 
-## Payments & refunds policy
+## Notifications
 
+Booking confirmations, changes, and 24h/1h reminders arrive by email.
+Open Dashboard → Notifications to toggle each channel (booking emails,
+reminder emails, push on changes, push reminders) or turn on browser push
+to get buzzed even with the tab closed. Staff day-sheets update live —
+no refresh needed.
+
+## Payments & refunds policy
 Deposits are 20% by default (configurable). Cancellations inside the
 allowed window are refunded via PayMongo; outside-window or no-show fees
 follow the shop's posted policy. Refunds are issued by admins from the

@@ -153,9 +153,9 @@ A production-grade barber shop booking system with multi-tenant support, real-ti
 - [x] Implement shop settings management
 
 ### Step 4.3: Real-time Updates
-- [ ] Implement WebSocket for live schedule updates
-- [ ] Add real-time booking notifications
-- [ ] Implement push notifications (optional)
+- [x] Implement WebSocket for live schedule updates (SSE stream `GET /api/v1/events` — Vercel-native; single `?token=` auth, role-scoped, Redis pub/sub across instances with in-process fallback; staff/admin day-sheets update instantly, 60s polling remains as fallback)
+- [x] Add real-time booking notifications (all six mutation sites emit: create/confirm/cancel/reschedule/status/no-show)
+- [x] Implement push notifications (optional) (Web Push: VAPID, `push_subscriptions`, `/sw.js`, dashboard toggle; sent alongside email per user prefs)
 
 ---
 
@@ -173,7 +173,7 @@ A production-grade barber shop booking system with multi-tenant support, real-ti
 - [x] Build email notification templates
 - [x] Build SMS notification templates
 - [x] Implement delivery tracking
-- [ ] Add notification preferences
+- [x] Add notification preferences (`notification_preferences`: email/push × confirmations/reminders; dashboard toggles; honored in queue + reminders; missing row = all on)
 
 ### Step 5.3: Automated Jobs
 - [x] Implement slot hold cleanup job
@@ -213,15 +213,15 @@ A production-grade barber shop booking system with multi-tenant support, real-ti
 ### Step 7.1: CI/CD Pipeline
 - [x] Set up GitHub Actions workflow
 - [x] Configure automated testing gates
-- [ ] Set up staging environment
+- [ ] Set up staging environment (steps documented in `OPERATIONS.md`; needs owner-side Neon branch + Vercel Preview env)
 - [x] Configure production deployment
-- [ ] Implement database migration automation
+- [x] Implement database migration automation (`Migrate production database` workflow: typed-confirm gate + status preview; stays off the Vercel build by design)
 
 ### Step 7.2: Monitoring & Alerting
 - [x] Set up error tracking (Sentry)
 - [x] Configure application monitoring (Sentry + `/api/health` + Vercel logs)
 - [x] Set up uptime monitoring (`Uptime monitor` workflow polls `/api/health` every 15 min; fails loudly → GitHub notifies owner)
-- [ ] Configure alerting (PagerDuty/Slack — Sentry email covers solo-operator launch)
+- [x] Configure alerting (PagerDuty/Slack — uptime workflow fails loudly → GitHub notify; optional `SLACK_WEBHOOK_URL` posts to Slack; Sentry email covers errors)
 - [x] Implement logging aggregation (Vercel logs + `audit_log` + job summaries)
 
 ### Step 7.3: Documentation
@@ -246,7 +246,7 @@ A production-ready v1 should satisfy all of the following:
 
 - [ ] Customer can browse shops/services/staff and complete a booking end-to-end on mobile and desktop
 - [ ] No double-booking possible under concurrent load (verified with load/race-condition tests)
-- [ ] Staff can manage their own schedule and see upcoming appointments in real time
+- [x] Staff can manage their own schedule and see upcoming appointments in real time
 - [ ] Admin can manage services, staff, pricing, and view basic revenue/utilization analytics
 - [ ] Payments (deposit or full) process through a PCI-compliant provider; refunds/cancellations work per policy
 - [ ] SMS/email reminders sent reliably with delivery tracking
