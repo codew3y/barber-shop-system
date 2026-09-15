@@ -15,7 +15,7 @@
 | M3 — Staff/Admin Dashboard | ✅ Done | 4.1 ✅, 4.2 ✅, 4.3 via 15s polling (WebSocket deferred, push optional) |
 | M4 — Payments & Notifications | ✅ Done | 5.1 ✅ (Stripe code live, needs keys), 5.2 ✅ (prefs deferred), 5.3 ✅ (ICS export; Google sync deferred) |
 | M5 — Security Hardening & QA | ✅ Done | 6.1–6.3 ✅, `docs/SECURITY.md` (CSRF N/A documented, Redis limits + audit fix flagged for launch) |
-| M6 — Deployment & Monitoring | 🔄 Near-done | Sentry DSN set (local + Vercel) + `instrumentation.ts`, `/api/health`, CI gates ✅, cron ✅, 7.3 docs ✅, race/authz re-verified 2026-09-15; uptime-monitor wiring, prod Sentry confirm, rollback drill, launch window pending |
+| M6 — Deployment & Monitoring | 🔄 Near-done | Sentry DSN set (local + Vercel) + `instrumentation.ts`, `/api/health`, CI gates ✅, cron ✅, uptime monitor ✅, 7.3 docs ✅, migrate-prod workflow ✅, race/authz re-verified 2026-09-15; staging resources, rollback drill, launch window pending |
 | M3 — Staff/Admin Dashboard | ⬜ | Phase 4 |
 | M4 — Payments & Notifications | ⬜ | Phase 5 |
 | M5 — Security Hardening & QA | ⬜ | Phase 6 |
@@ -87,6 +87,7 @@
 | 2026-09-15 | Phase 7 push: Sentry DSNs set (local + Vercel) + redeploy; added `instrumentation.ts` (server/edge init) + `/api/health` (db/redis probe) + gated sourcemap upload on `SENTRY_AUTH_TOKEN`; wrote `API.md`, `OPERATIONS.md`, `USER-GUIDE.md`, `PRIVACY.md`, `LAUNCH.md`; verified local — typecheck clean, lint 0 errors, 26/26 tests, 8-way race 1×201/7×409, 11/11 authz. Prod `.env` untouched (local run used env overrides). Noted future: `middleware`→`proxy` rename, `@sentry/nextjs/config` import. |
 | 2026-09-15 | Prod `/api/health` verified live (`status ok`, db + redis ok) after `325590b` deploy. |
 | 2026-09-15 | Closed 1–2: temp `/api/sentry-test` threw on prod → Sentry issue confirmed (`newGroups: 1` on release `4dcce8f`) → route removed (`07e8627`); `Uptime monitor` workflow added (every 15 min + manual). Still open: rollback drill, launch window. |
+| 2026-09-15 | Closed 4.3 + 5.2 + rest of 7: SSE live events (`/api/v1/events`, Redis pub/sub + local fallback, emits at 6 mutation sites, staff/admin instant refresh w/ 60s poll fallback) + Web Push (VAPID, subs API, `/sw.js`, dashboard toggle, sent per prefs) + prefs API/UI honored in queue+reminders; migrate-prod workflow, Slack hook, staging runbook, audit exception. Verified: typecheck, lint 0 errors, 32/32 tests, build green, live SSE roundtrip (created+cancelled, customer + staff scopes), prefs/push API roundtrips. New migration `push_and_prefs` applied locally — PROD STILL NEEDS IT (migrate-prod workflow or CLI). |
 
 ## Quickstart (fresh machine / resume)
 

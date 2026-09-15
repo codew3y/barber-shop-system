@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { requireAuth, jsonError } from '@/lib/api';
 import { HOLD_MINUTES, canActOnBooking, validateSlotAvailability } from '@/services/bookingService';
 import { queueBookingNotifications } from '@/services/notificationService';
+import { emitShopEvent } from '@/lib/events';
 import { rateLimit } from '@/lib/rate-limit';
 import { rescheduleBookingSchema } from '@/schemas/booking';
 
@@ -71,6 +72,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ book
       },
     });
     void queueBookingNotifications(bookingId, 'booking_rescheduled');
+    emitShopEvent({ type: 'booking.rescheduled', shopId: booking.shopId, bookingId, customerId: booking.customerId, staffId: booking.staffId, status: 'pending' });
     return NextResponse.json({ booking: updated, holdExpiresAt: updated.holdExpiresAt });
   } catch {
     return jsonError('Time slot is no longer available', 409);

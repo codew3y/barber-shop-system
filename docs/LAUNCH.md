@@ -9,6 +9,14 @@
 - [x] Sentry client/server/edge wired via `instrumentation.ts`; sourcemap upload gated on `SENTRY_AUTH_TOKEN`
 - [x] Docs: `API.md`, `OPERATIONS.md` (runbook + rollback + migrations), `USER-GUIDE.md`, `PRIVACY.md`
 
+## Verified 2026-09-15, round 2 (4.3 + 5.2)
+
+- [x] `typecheck` clean, `lint` 0 errors, 32/32 unit tests (prefs resolution + event-bus delivery/dedupe)
+- [x] Production `build` green (new `/api/v1/events`, `/api/v1/push/*`, `/api/v1/settings/*` routes)
+- [x] Live SSE roundtrip: booking create → `booking.created` on customer stream; cancel → `booking.cancelled`; staff login stream got shop event; unauthenticated stream 401s
+- [x] Prefs GET/PUT roundtrip (reminders-off persisted); push sub POST/GET/DELETE roundtrip; push send failure counted without crash or wrongful prune
+- [x] New migration `push_and_prefs` applied locally — **must also run against prod Neon** (new `Migrate production database` workflow or CLI) or push/prefs APIs 500 in prod
+
 ## Before opening bookings (owner actions)
 
 - [x] **Prod Sentry event:** confirmed 2026-09-15 — temp route threw on prod, issue formed on release `4dcce8f` (`newGroups: 1`); route removed in `07e8627`

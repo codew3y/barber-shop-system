@@ -1,0 +1,50 @@
+name: Migrate production database
+
+# One-click prod migrations (Phase 7.1). Migrations stay OFF the Vercel
+# build on purpose (concurrent deploys + no snapshot point) — instead this
+# workflow applies them deliberately, with an explicit confirmation gate.
+#
+# Setup (once): add these repository secrets (Neon dashboard → connection
+# strings, pooled + direct):
+#   NEON_DATABASE_URL, NEON_DIRECT_URL
+# Usage: Actions tab → "Migrate production database" → Run workflow →
+# type: migrate
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "migrate" to apply pending migrations to Neon prod'
+        required: true
+        default: ''
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Confirm gate
+        if: ${{ inputs.confirm != 'migrate' }}
+        run: |
+          echo "::error::Type \"migrate\" in the confirm field to proceed."
+          exit 1
+
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm install --legacy-peer-deps --no-audit --no-fund
+
+      - name: Show pending status (dry read before applying)
+        continue-on-error: true
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.NEON_DIRECT_URL }}
+        run: npx prisma migrate status
+
+      - name: Apply pending migrations
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.NEON_DIRECT_URL }}
+        run: npx prisma migrate deploy

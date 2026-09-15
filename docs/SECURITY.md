@@ -22,7 +22,7 @@ Run the evidence yourself: `npm run dev`, then
 | A03 Injection | ✅ | Prisma ORM everywhere (no raw SQL except vetted seed/cleanup scripts); Zod at every boundary; `lib/sanitize.ts` strips HTML/control chars from stored free text (verified: `<script>` stored as plain text) |
 | A04 Insecure Design | ✅ | Exclusion constraint makes double-booking structurally impossible; idempotency keys on booking create; webhook signature verification |
 | A05 Misconfiguration | ✅ | `middleware.ts` sets CSP, HSTS, X-Frame-Options DENY, nosniff, Referrer-Policy, Permissions-Policy; `.env` git-ignored, `.env.example` documents placeholders |
-| A06 Vulnerable Components | ⚠️ watch | `npm audit` shows 13 vulns (5 moderate, 8 high) in transitive deps — scheduled cleanup before launch |
+| A06 Vulnerable Components | ✅ assessed | `npm audit` shows 3 highs, all `deepmerge-ts` via `@prisma/config` (prisma CLI only). Fix needs `--force` downgrade to prisma 6.12 (breaking); the flaw is stack exhaustion on recursive config graphs — not reachable from user input, no production code path. Accepted risk, re-check on next Prisma bump. |
 | A07 Auth Failures | ✅ | 5–10/min rate limits on auth endpoints; generic "Invalid credentials" (no enumeration); forgot-password always returns success |
 | A08 Data Integrity | ✅ | Stripe webhook signature required (400 without); refresh-token rotation blacklists old JTIs |
 | A09 Logging Failures | ✅ | `audit_log` rows on booking cancel/reschedule/status/hold-expiry; structured JSON summaries from job runs |
@@ -36,6 +36,6 @@ Run the evidence yourself: `npm run dev`, then
 
 ## Before launch
 
-1. `npm audit fix` the transitive vulns (or document exceptions).
+1. ~~`npm audit fix` the transitive vulns (or document exceptions)~~ — done 2026-09-15: only prisma-CLI `deepmerge-ts` highs remain, accepted (see A06).
 2. Redis-backed rate limits + `INTERNAL_JOB_KEY`, `PAYMONGO_*` set.
 3. Re-run `scripts/security-audit.ts` against staging.

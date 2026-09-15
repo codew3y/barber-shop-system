@@ -11,6 +11,14 @@ Zod details; forbidden returns `403`; double-booked slots return `409`.
 | Method | Path | Auth | Notes |
 |---|---|---|---|
 | GET | `/api/health` | none | Uptime-monitor target. `200 {status:"ok"}` when DB reachable; `503` when DB down. Redis reported in `checks` but never fails the probe. |
+| GET | `/api/v1/events?token=` | access (query) | SSE live stream (4.3). Token in query (EventSource can't set headers), validated at connect. Staff/admin get shop-scoped booking events; customers only their own. Heartbeat `: ping` every 25s; auto-reconnects. |
+
+## Push & preferences
+
+| Method | Path | Auth | Notes |
+|---|---|---|---|
+| GET/POST/DELETE | `/api/v1/push/subscriptions` | access | Browser push subscriptions (4.3). POST upserts by endpoint `{endpoint, keys:{p256dh,auth}, userAgent?}` → 201. Scoped to caller. |
+| GET/PUT | `/api/v1/settings/notifications` | access | Channel prefs (5.2): `{emailConfirmations, emailReminders, pushConfirmations, pushReminders}`. Missing row = all on. |
 
 ## Auth (`/auth`)
 
