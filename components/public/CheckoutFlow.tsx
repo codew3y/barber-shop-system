@@ -156,6 +156,7 @@ export function CheckoutFlow({
     amount: number;
     reference: string | null;
     qrImageUrl: string | null;
+    testUrl?: string | null;
   } | null>(null);
   const paymentRef = useRef<HTMLDivElement>(null);
 
@@ -296,12 +297,13 @@ export function CheckoutFlow({
         const errBody = (await intentRes.json().catch(() => ({}))) as { error?: string };
         throw new Error(errBody.error ?? `Payment failed (${intentRes.status})`);
       }
-      const intent = (await intentRes.json()) as { amount: string; qrImageUrl: string };
+      const intent = (await intentRes.json()) as { amount: string; qrImageUrl: string; testUrl?: string };
       setPayment({
         bookingId,
         amount: Number(intent.amount),
         reference: null,
         qrImageUrl: intent.qrImageUrl,
+        testUrl: intent.testUrl ?? null,
       });
     } catch (e) {
       const message = (e as Error).message;
@@ -464,6 +466,7 @@ export function CheckoutFlow({
                   amount={payment.amount}
                   reference={payment.reference}
                   qrImageUrl={payment.qrImageUrl}
+                  testUrl={payment.testUrl}
                   onBack={() => setPayment(null)}
                 />
                 <Link

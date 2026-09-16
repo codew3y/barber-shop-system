@@ -11,6 +11,7 @@ type Pending = {
   amount: number;
   reference: string | null;
   qrImageUrl: string | null;
+  testUrl?: string | null;
 };
 
 /**
@@ -77,8 +78,8 @@ export function PayNow({
         const body = (await intentRes.json().catch(() => ({}))) as { error?: string };
         throw new Error(body.error ?? `Payment failed (${intentRes.status})`);
       }
-      const intent = (await intentRes.json()) as { amount: string; qrImageUrl: string };
-      setPending({ amount: Number(intent.amount), reference: null, qrImageUrl: intent.qrImageUrl });
+      const intent = (await intentRes.json()) as { amount: string; qrImageUrl: string; testUrl?: string };
+      setPending({ amount: Number(intent.amount), reference: null, qrImageUrl: intent.qrImageUrl, testUrl: intent.testUrl ?? null });
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -93,6 +94,7 @@ export function PayNow({
           amount={pending.amount}
           reference={pending.reference}
           qrImageUrl={pending.qrImageUrl}
+          testUrl={pending.testUrl}
           onBack={() => setPending(null)}
         />
       </div>
