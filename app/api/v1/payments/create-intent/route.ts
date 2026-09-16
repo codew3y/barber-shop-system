@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth, jsonError } from '@/lib/api';
 import { rateLimit } from '@/lib/rate-limit';
-import { createQrIntent, paymongoConfigured } from '@/lib/paymongo';
+import { createQrIntent, isPaymongoTestMode, paymongoConfigured } from '@/lib/paymongo';
 import { createIntentSchema } from '@/schemas/payment';
 
 async function effectivePrice(booking: { staffId: string; serviceId: string; service: { price: unknown } }): Promise<number> {
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let qr: { intentId: string; clientKey: string; qrImageUrl: string };
+  let qr: { intentId: string; clientKey: string; qrImageUrl: string; testUrl: string | null };
   try {
     qr = await createQrIntent({
       amountPesos: amount,
@@ -81,6 +81,9 @@ export async function POST(req: NextRequest) {
       intentId: qr.intentId,
       paymentId: payment.id,
       amount: amount.toFixed(2),
+      // Test mode only: open this to simulate the customer scan. Real
+      // bank/e-wallet apps cannot settle a test-mode QR.
+      ...(isPaymongoTestMode() && qr.testUrl ? { testUrl: qr.testUrl } : {}),
     },
     { status: 201 }
   );
