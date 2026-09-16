@@ -14,11 +14,13 @@ export function QrPay({
   amount,
   reference,
   qrImageUrl,
+  testUrl,
   onBack,
 }: {
   amount: number;
   reference: string | null;
   qrImageUrl?: string | null;
+  testUrl?: string | null;
   onBack: () => void;
 }) {
   const payload = `BARBERHOUSE|${reference}|PHP ${amount.toFixed(2)}`;
@@ -49,6 +51,20 @@ export function QrPay({
         )}
       </div>
       <p className="muted mt-3 text-xs">Downpayments are non-refundable.</p>
+      {testUrl ? (
+        <p className="muted mt-2 text-xs">
+          Test mode: real bank apps can&apos;t pay this code.{' '}
+          <a
+            href={testUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="font-medium text-ivory underline"
+          >
+            Open the PayMongo simulator
+          </a>{' '}
+          to mark it paid.
+        </p>
+      ) : null}
       <div className="mt-5 flex justify-center gap-3">
         <button onClick={onBack} className="btn-ghost">
           <ArrowLeft size={15} /> Back

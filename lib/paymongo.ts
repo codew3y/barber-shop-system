@@ -52,6 +52,10 @@ export function paymongoConfigured(): boolean {
   return !!process.env.PAYMONGO_SECRET_KEY;
 }
 
+export function isPaymongoTestMode(): boolean {
+  return (process.env.PAYMONGO_SECRET_KEY ?? '').startsWith('sk_test_');
+}
+
 interface PmIntent {
   id: string;
   attributes: {
@@ -59,7 +63,7 @@ interface PmIntent {
     client_key: string;
     metadata?: Record<string, string>;
     payments?: { id: string }[];
-    next_action?: { code?: { image_url?: string } } | null;
+    next_action?: { code?: { image_url?: string; test_url?: string } } | null;
   };
 }
 
@@ -67,7 +71,7 @@ export async function createQrIntent(params: {
   amountPesos: number;
   description: string;
   metadata: Record<string, string>;
-}): Promise<{ intentId: string; clientKey: string; qrImageUrl: string }> {
+}): Promise<{ intentId: string; clientKey: string; qrImageUrl: string; testUrl: string | null }> {
   const centavos = Math.round(params.amountPesos * 100);
   if (centavos < 100) throw new Error('Minimum QR Ph payment is ₱1.00');
 
@@ -105,7 +109,12 @@ export async function createQrIntent(params: {
 
   const qrImageUrl = attached.attributes.next_action?.code?.image_url;
   if (!qrImageUrl) throw new Error('QR code not returned by PayMongo');
-  return { intentId: intent.id, clientKey: intent.attributes.client_key, qrImageUrl };
+  return {
+    intentId: intent.id,
+    clientKey: intent.attributes.client_key,
+    qrImageUrl,
+    testUrl: attached.attributes.next_action?.code?.test_url ?? null,
+  };
 }
 
 export interface PmWebhookEvent {
@@ -136,10 +145,30 @@ export function verifyWebhookSignature(
 ): PmWebhookEvent {
   const secret = process.env.PAYMONGO_WEBHOOK_SECRET;
   if (!secret) throw new Error('PayMongo webhooks not configured');
-  const expected = createHmac('sha256', secret).update(rawPayload, 'utf8').digest('hex');
-  const a = Buffer.from(expected);
-  const b = Buffer.from((signatureHeader || '').trim());
-  if (a.length !== b.length || !timingSafeEqual(a, b)) {
+  // Header format: "t=<timestamp>,te=<test-sig>,li=<live-sig>".
+  // Signed content is "<timestamp>.<rawBody>"; test events use `te`,
+  // live events use `li`. Older docs show a bare hex signature — accept
+  // that too so single-secret setups keep working.
+  const parts = Object.fromEntries(
+    (signatureHeader || '').split(',').map((p) => {
+      const idx = p.indexOf('=');
+      return idx === -1 ? [p.trim(), ''] : [p.slice(0, idx).trim(), p.slice(idx + 1).trim()];
+    })
+  );
+  const timestamp = parts.t ?? '';
+  const candidates = [parts.te, parts.li, parts[''] ?? signatureHeader.trim()].filter(
+    (s): s is string => !!s
+  );
+  const signedContents = timestamp ? [`${timestamp}.${rawPayload}`, rawPayload] : [rawPayload];
+  const ok = signedContents.some((content) => {
+    const expected = createHmac('sha256', secret).update(content, 'utf8').digest('hex');
+    return candidates.some((sig) => {
+      const a = Buffer.from(expected);
+      const b = Buffer.from(sig);
+      return a.length === b.length && timingSafeEqual(a, b);
+    });
+  });
+  if (!ok) {
     throw new Error('Invalid webhook signature');
   }
   const envelope = JSON.parse(rawPayload) as PmEventEnvelope;
