@@ -1,4 +1,4 @@
-// Prisma schema — generated from PHASE-2-ARCHITECTURE.md ERD
+// Prisma schema — see docs/API.md for the surface these models back.
 // NOTE: the double-booking exclusion constraint (btree_gist) cannot be
 // expressed in Prisma schema and is added via a raw migration (see
 // prisma/migrations/.../add_booking_exclusion.sql).
