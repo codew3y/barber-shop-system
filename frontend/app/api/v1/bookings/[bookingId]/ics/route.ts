@@ -25,7 +25,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ book
     },
   });
   if (!booking) return jsonError('Booking not found', 404);
-  if (!(await canActOnBooking(auth.user.id, auth.user.role, booking))) {
+  if (!(await canActOnBooking(auth.user.id, auth.user.role, booking, auth.guestSince))) {
     return jsonError('Insufficient permissions', 403);
   }
 

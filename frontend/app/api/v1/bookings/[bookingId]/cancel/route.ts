@@ -29,7 +29,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ book
 
   const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
   if (!booking) return jsonError('Booking not found', 404);
-  if (!(await canActOnBooking(auth.user.id, auth.user.role, booking))) {
+  if (!(await canActOnBooking(auth.user.id, auth.user.role, booking, auth.guestSince))) {
     return jsonError('Insufficient permissions', 403);
   }
   if (booking.status === 'cancelled') return jsonError('Booking already cancelled', 400);

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'crypto';
 import { prisma } from '@barberhouse/backend/lib/prisma';
-import { requireAuth, jsonError } from '@barberhouse/backend/lib/api';
+import { requireAuth, jsonError, ownsBooking } from '@barberhouse/backend/lib/api';
 import { rateLimit } from '@barberhouse/backend/lib/rate-limit';
 import { z } from 'zod';
 
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     include: { service: { select: { price: true } }, shop: { select: { settingsJson: true } } },
   });
   if (!booking) return jsonError('Booking not found', 404);
-  if (booking.customerId !== auth.user.id) return jsonError('Insufficient permissions', 403);
+  if (!ownsBooking(auth, booking)) return jsonError('Insufficient permissions', 403);
   if (booking.status === 'cancelled' || booking.status === 'completed' || booking.status === 'no_show') {
     return jsonError(`Cannot pay for a ${booking.status} booking`, 400);
   }

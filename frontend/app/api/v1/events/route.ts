@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAccessToken } from '@barberhouse/backend/lib/auth';
+import { authenticateAccessToken } from '@barberhouse/backend/lib/api';
 import { prisma } from '@barberhouse/backend/lib/prisma';
 import { subscribeShopEvents, type ShopEvent } from '@barberhouse/backend/lib/events';
 
@@ -16,25 +16,11 @@ export async function GET(req: NextRequest) {
   if (!token) {
     return NextResponse.json({ error: 'No token provided' }, { status: 401 });
   }
-  let userId: string;
-  let role: string;
-  try {
-    const decoded = verifyAccessToken(token);
-    if (decoded.type !== 'access') {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: { id: true, role: true, deletedAt: true },
-    });
-    if (!user || user.deletedAt) {
-      return NextResponse.json({ error: 'User not found' }, { status: 401 });
-    }
-    userId = user.id;
-    role = user.role;
-  } catch {
-    return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-  }
+  const auth = await authenticateAccessToken(token);
+  if ('error' in auth) return auth.error;
+  const userId = auth.user.id;
+  const role = auth.user.role;
+  const guestSince = auth.guestSince;
 
   let shopIds: Set<string> | null = null; // null = all shops (admin)
   if (role === 'staff') {
@@ -45,10 +31,24 @@ export async function GET(req: NextRequest) {
     shopIds = new Set(profiles.map((p) => p.shopId));
   }
 
-  const visible = (e: ShopEvent): boolean => {
+  // A guest-scoped session only hears about bookings made since it started;
+  // the answer per booking never changes, so cache it for the stream.
+  const inScope = new Map<string, boolean>();
+  const guestOwns = async (bookingId: string): Promise<boolean> => {
+    if (!guestSince) return true;
+    let ok = inScope.get(bookingId);
+    if (ok === undefined) {
+      const b = await prisma.booking.findUnique({ where: { id: bookingId }, select: { createdAt: true } });
+      ok = !!b && b.createdAt >= guestSince;
+      inScope.set(bookingId, ok);
+    }
+    return ok;
+  };
+
+  const visible = async (e: ShopEvent): Promise<boolean> => {
     if (role === 'admin' || role === 'super_admin') return true;
     if (role === 'staff') return shopIds!.has(e.shopId);
-    return e.customerId === userId;
+    return e.customerId === userId && (await guestOwns(e.bookingId));
   };
 
   const encoder = new TextEncoder();
@@ -76,7 +76,11 @@ export async function GET(req: NextRequest) {
       };
       send(`: connected\n\n`);
       unsubscribe = await subscribeShopEvents((event) => {
-        if (visible(event)) send(`data: ${JSON.stringify(event)}\n\n`);
+        void visible(event)
+          .then((ok) => {
+            if (ok) send(`data: ${JSON.stringify(event)}\n\n`);
+          })
+          .catch(() => {});
       });
       heartbeat = setInterval(() => send(`: ping\n\n`), 25_000);
     },

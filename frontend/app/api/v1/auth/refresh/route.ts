@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { rotateRefreshToken } from '@barberhouse/backend/lib/auth';
 import { jsonError } from '@barberhouse/backend/lib/api';
+import { rateLimit } from '@barberhouse/backend/lib/rate-limit';
 import { RedisUnavailableError } from '@barberhouse/backend/lib/redis';
 import { refreshSchema } from '@barberhouse/backend/schemas/auth';
 
 export async function POST(req: NextRequest) {
+  // Generous: every open tab refreshes every 15 minutes.
+  const limited = await rateLimit(req, 'auth-refresh', 30, 60_000);
+  if (limited) return limited;
+
   let body: unknown;
   try {
     body = await req.json();

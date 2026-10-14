@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
 
   const where = {
     customerId: auth.user.id,
+    ...(auth.guestSince ? { createdAt: { gte: auth.guestSince } } : {}),
     ...(status ? { status } : {}),
   };
   const [total, bookings] = await Promise.all([

@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
   const user = await prisma.user.findUnique({ where: { email: parsed.data.email } });
   if (!user || user.deletedAt) return NextResponse.json({ success: true });
 
-  const resetToken = generatePasswordResetToken(user.id);
+  const resetToken = generatePasswordResetToken(user);
   // Phase 5 will email this token. In dev we return it so the flow is testable.
   if (process.env.NODE_ENV === 'production') {
     // TODO: send via email provider

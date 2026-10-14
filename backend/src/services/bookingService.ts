@@ -257,9 +257,11 @@ export async function getAvailableSlots(
 export async function canActOnBooking(
   userId: string,
   userRole: string,
-  booking: { customerId: string; staffId: string; shopId: string }
+  booking: { customerId: string; staffId: string; shopId: string; createdAt: Date },
+  guestSince: Date | null = null
 ): Promise<boolean> {
-  if (booking.customerId === userId) return true;
+  // A guest-scoped session only reaches bookings made since it started.
+  if (booking.customerId === userId) return !guestSince || booking.createdAt >= guestSince;
   if (userRole === 'super_admin') return true;
   const staffProfile = await prisma.staff.findFirst({
     where: { userId, shopId: booking.shopId, deletedAt: null },

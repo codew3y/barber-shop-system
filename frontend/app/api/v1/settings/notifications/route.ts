@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@barberhouse/backend/lib/prisma';
-import { requireAuth, jsonError } from '@barberhouse/backend/lib/api';
+import { requireAuth, jsonError, GUEST_SCOPE_FORBIDDEN } from '@barberhouse/backend/lib/api';
 import { DEFAULT_PREFS } from '@barberhouse/backend/lib/preferences';
 import { updateNotificationPrefsSchema } from '@barberhouse/backend/schemas/notifications';
 
@@ -9,9 +9,10 @@ import { updateNotificationPrefsSchema } from '@barberhouse/backend/schemas/noti
 export async function GET(req: NextRequest) {
   const auth = await requireAuth(req);
   if ('error' in auth) return auth.error;
-  const row = await prisma.notificationPreference.findUnique({
-    where: { userId: auth.user.id },
-  });
+  // Guest-scoped sessions see defaults, not the resumed account's settings.
+  const row = auth.guestSince
+    ? null
+    : await prisma.notificationPreference.findUnique({ where: { userId: auth.user.id } });
   return NextResponse.json({
     preferences: {
       emailConfirmations: row?.emailConfirmations ?? DEFAULT_PREFS.emailConfirmations,
@@ -25,6 +26,7 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   const auth = await requireAuth(req);
   if ('error' in auth) return auth.error;
+  if (auth.guestSince) return jsonError(GUEST_SCOPE_FORBIDDEN, 403);
   let body: unknown;
   try {
     body = await req.json();

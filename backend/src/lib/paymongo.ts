@@ -139,9 +139,14 @@ interface PmEventEnvelope {
   };
 }
 
+// How far a signed webhook timestamp may drift from our clock. Outside this
+// window a correctly signed but captured delivery is treated as a replay.
+export const WEBHOOK_TOLERANCE_SECONDS = 300;
+
 export function verifyWebhookSignature(
   rawPayload: string,
-  signatureHeader: string
+  signatureHeader: string,
+  nowMs: number = Date.now()
 ): PmWebhookEvent {
   const secret = process.env.PAYMONGO_WEBHOOK_SECRET;
   if (!secret) throw new Error('PayMongo webhooks not configured');
@@ -159,7 +164,15 @@ export function verifyWebhookSignature(
   const candidates = [parts.te, parts.li, parts[''] ?? signatureHeader.trim()].filter(
     (s): s is string => !!s
   );
-  const signedContents = timestamp ? [`${timestamp}.${rawPayload}`, rawPayload] : [rawPayload];
+  // With a timestamp, only "<t>.<body>" is accepted and t must be fresh, so a
+  // captured delivery can't be replayed later (stripping t breaks the HMAC).
+  if (timestamp) {
+    const t = Number(timestamp);
+    if (!Number.isFinite(t) || Math.abs(nowMs / 1000 - t) > WEBHOOK_TOLERANCE_SECONDS) {
+      throw new Error('Webhook timestamp outside tolerance');
+    }
+  }
+  const signedContents = timestamp ? [`${timestamp}.${rawPayload}`] : [rawPayload];
   const ok = signedContents.some((content) => {
     const expected = createHmac('sha256', secret).update(content, 'utf8').digest('hex');
     return candidates.some((sig) => {
