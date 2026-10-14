@@ -34,11 +34,11 @@ export default function LoginPage() {
           onSubmit={handleSubmit(async (values) => {
             setError(null);
             try {
-              const data = await apiJson<{ user: PublicUser; accessToken: string; refreshToken: string }>(
+              const data = await apiJson<{ user: PublicUser; accessToken: string }>(
                 '/api/v1/auth/login',
                 { method: 'POST', body: JSON.stringify(values) }
               );
-              setSession(data.user, data.accessToken, data.refreshToken);
+              setSession(data.user, data.accessToken);
               router.push('/dashboard');
             } catch (e) {
               setError((e as Error).message);

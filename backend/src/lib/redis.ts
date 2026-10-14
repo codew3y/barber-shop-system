@@ -36,10 +36,12 @@ export class RedisUnavailableError extends Error {
   }
 }
 
-// Refresh-token blacklist (rotation / reuse detection).
-export async function blacklistToken(jti: string, ttlSeconds: number): Promise<void> {
+// Refresh-token blacklist (rotation / reuse detection). The value records
+// why the jti is dead: '1' = revoked (logout), otherwise the epoch ms it was
+// rotated at (see refreshReuseAllowed in auth.ts).
+export async function blacklistToken(jti: string, ttlSeconds: number, rotatedAtMs?: number): Promise<void> {
   try {
-    await redis.setex(`blacklist:${jti}`, ttlSeconds, '1');
+    await redis.setex(`blacklist:${jti}`, ttlSeconds, rotatedAtMs ? String(rotatedAtMs) : '1');
   } catch (err) {
     if (redisConfigured) {
       // Failing to record the old jti means the token stays replayable.
@@ -50,14 +52,40 @@ export async function blacklistToken(jti: string, ttlSeconds: number): Promise<v
   }
 }
 
-export async function isTokenBlacklisted(jti: string): Promise<boolean> {
+export async function getBlacklistEntry(jti: string): Promise<string | null> {
   try {
-    return (await redis.get(`blacklist:${jti}`)) === '1';
+    return await redis.get(`blacklist:${jti}`);
   } catch (err) {
     if (redisConfigured) {
       // Cannot prove the token is unused — refuse rather than allow a replay.
       console.error('[redis] failed to check refresh-token blacklist', err);
-      throw new RedisUnavailableError('isTokenBlacklisted', err);
+      throw new RedisUnavailableError('getBlacklistEntry', err);
+    }
+    return null;
+  }
+}
+
+// Session families: every refresh token from one sign-in shares a family id
+// (`fid`). Logout, or reuse outside the grace window, revokes the family so
+// no token in that chain — older or newer — can be refreshed again.
+export async function revokeFamily(fid: string, ttlSeconds: number): Promise<void> {
+  try {
+    await redis.setex(`family-revoked:${fid}`, ttlSeconds, '1');
+  } catch (err) {
+    if (redisConfigured) {
+      console.error('[redis] failed to revoke session family', err);
+      throw new RedisUnavailableError('revokeFamily', err);
+    }
+  }
+}
+
+export async function isFamilyRevoked(fid: string): Promise<boolean> {
+  try {
+    return (await redis.get(`family-revoked:${fid}`)) === '1';
+  } catch (err) {
+    if (redisConfigured) {
+      console.error('[redis] failed to check session family', err);
+      throw new RedisUnavailableError('isFamilyRevoked', err);
     }
     return false;
   }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@barberhouse/backend/lib/prisma';
 import { generateTokens } from '@barberhouse/backend/lib/auth';
 import { hashPassword } from '@barberhouse/backend/lib/password';
-import { publicUser, jsonError } from '@barberhouse/backend/lib/api';
+import { publicUser, jsonError, sessionResponse } from '@barberhouse/backend/lib/api';
 import { cleanText } from '@barberhouse/backend/lib/sanitize';
 import { rateLimit } from '@barberhouse/backend/lib/rate-limit';
 import { registerSchema } from '@barberhouse/backend/schemas/auth';
@@ -40,8 +40,5 @@ export async function POST(req: NextRequest) {
     },
   });
   const tokens = generateTokens(user);
-  return NextResponse.json(
-    { user: publicUser(user), accessToken: tokens.accessToken, refreshToken: tokens.refreshToken },
-    { status: 201 }
-  );
+  return sessionResponse(publicUser(user), tokens, 201);
 }

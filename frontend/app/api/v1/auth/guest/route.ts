@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@barberhouse/backend/lib/prisma';
 import { generateTokens } from '@barberhouse/backend/lib/auth';
 import { hashPassword } from '@barberhouse/backend/lib/password';
-import { publicUser, jsonError, scopedGuestUser } from '@barberhouse/backend/lib/api';
+import { publicUser, jsonError, scopedGuestUser, sessionResponse } from '@barberhouse/backend/lib/api';
 import { cleanText } from '@barberhouse/backend/lib/sanitize';
 import { rateLimit } from '@barberhouse/backend/lib/rate-limit';
 import { guestSchema } from '@barberhouse/backend/schemas/auth';
@@ -65,18 +65,14 @@ export async function POST(req: NextRequest) {
     // their contact details onto it would redirect the account's reminders),
     // and the session they get reaches only bookings they make from now on.
     const tokens = generateTokens(reusable, { guestSince: new Date() });
-    return NextResponse.json(
-      {
-        user: scopedGuestUser(reusable, {
-          firstName: cleanText(firstName, 100),
-          lastName: lastName ? cleanText(lastName, 100) : '',
-          email: providedEmail ?? null,
-          phone,
-        }),
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-      },
-      { status: 200 }
+    return sessionResponse(
+      scopedGuestUser(reusable, {
+        firstName: cleanText(firstName, 100),
+        lastName: lastName ? cleanText(lastName, 100) : '',
+        email: providedEmail ?? null,
+        phone,
+      }),
+      tokens
     );
   }
 
@@ -100,8 +96,5 @@ export async function POST(req: NextRequest) {
     throw e;
   }
   const tokens = generateTokens(user);
-  return NextResponse.json(
-    { user: publicUser(user), accessToken: tokens.accessToken, refreshToken: tokens.refreshToken },
-    { status: 201 }
-  );
+  return sessionResponse(publicUser(user), tokens, 201);
 }

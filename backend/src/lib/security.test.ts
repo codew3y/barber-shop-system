@@ -4,6 +4,8 @@ import {
   generatePasswordResetToken,
   generateTokens,
   passwordVersion,
+  refreshReuseAllowed,
+  REFRESH_REUSE_GRACE_MS,
   verifyAccessToken,
   verifyPasswordResetToken,
   verifyRefreshToken,
@@ -36,6 +38,16 @@ describe('session tokens', () => {
     expect(verifyRefreshToken(refreshToken).gs).toBe(since.getTime());
   });
 
+  it('start a new session family per sign-in and keep it through rotation', () => {
+    const a = verifyRefreshToken(generateTokens(user).refreshToken);
+    const b = verifyRefreshToken(generateTokens(user).refreshToken);
+    expect(a.fid).toBeTruthy();
+    expect(a.fid).not.toBe(b.fid);
+    const rotated = verifyRefreshToken(generateTokens(user, { family: a.fid }).refreshToken);
+    expect(rotated.fid).toBe(a.fid);
+    expect(rotated.jti).not.toBe(a.jti);
+  });
+
   it('change version when the password changes', () => {
     expect(passwordVersion('$2b$12$abc')).not.toBe(passwordVersion('$2b$12$xyz'));
   });
@@ -46,6 +58,16 @@ describe('session tokens', () => {
     const { accessToken } = generateTokens(user);
     expect(() => verifyPasswordResetToken(accessToken)).toThrow();
   });
+});
+
+describe('refresh-token reuse window', () => {
+  const now = 1_000_000_000_000;
+  it('allows a never-used token', () => expect(refreshReuseAllowed(null, now)).toBe(true));
+  it('allows a token rotated moments ago (lost response)', () =>
+    expect(refreshReuseAllowed(String(now - 5_000), now)).toBe(true));
+  it('refuses reuse after the grace window', () =>
+    expect(refreshReuseAllowed(String(now - REFRESH_REUSE_GRACE_MS - 1), now)).toBe(false));
+  it('never allows a logged-out (revoked) token', () => expect(refreshReuseAllowed('1', now)).toBe(false));
 });
 
 describe('guest-scoped booking ownership', () => {

@@ -2,34 +2,41 @@
 
 import { create } from 'zustand';
 import type { PublicUser } from '@/lib/types';
-import { clearTokens, setTokens } from '@/lib/api-client';
+import { clearLegacyTokens, hasSessionHint, logout, refreshAccessToken, setAccessToken } from '@/lib/api-client';
 
 interface AuthState {
   user: PublicUser | null;
   ready: boolean;
-  setSession: (user: PublicUser, accessToken: string, refreshToken: string) => void;
-  clear: () => void;
+  // The refresh token arrives as an httpOnly cookie on the same response.
+  setSession: (user: PublicUser, accessToken: string) => void;
+  clear: () => Promise<void>;
   hydrate: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()((set) => ({
   user: null,
   ready: false,
-  setSession: (user, accessToken, refreshToken) => {
-    setTokens(accessToken, refreshToken);
+  setSession: (user, accessToken) => {
+    setAccessToken(accessToken);
     set({ user });
   },
-  clear: () => {
-    clearTokens();
+  clear: async () => {
     set({ user: null });
+    await logout();
   },
   hydrate: async () => {
-    const token = localStorage.getItem('booking.accessToken');
-    if (!token) {
+    clearLegacyTokens();
+    if (!hasSessionHint()) {
       set({ ready: true });
       return;
     }
     try {
+      // No token survives a reload; the session cookie mints a fresh one.
+      const token = await refreshAccessToken();
+      if (!token) {
+        set({ user: null });
+        return;
+      }
       const res = await fetch('/api/v1/auth/me', {
         headers: { authorization: `Bearer ${token}` },
       });
@@ -37,7 +44,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
       const data = await res.json();
       set({ user: data.user });
     } catch {
-      clearTokens();
+      setAccessToken(null);
       set({ user: null });
     } finally {
       set({ ready: true });
