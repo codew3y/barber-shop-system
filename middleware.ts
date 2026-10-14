@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // Global edge middleware: security headers on every response.
-// (Auth uses Bearer tokens, not cookies, so no CSRF surface — see SECURITY.md.)
+// (Auth uses Bearer tokens, not cookies, so there is no CSRF surface.)
 export function middleware(_req: NextRequest) {
   const res = NextResponse.next();
   res.headers.set('X-Content-Type-Options', 'nosniff');
