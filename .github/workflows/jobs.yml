@@ -16,6 +16,9 @@ concurrency:
   group: scheduled-jobs
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   run:
     runs-on: ubuntu-latest
@@ -23,9 +26,13 @@ jobs:
     steps:
       - name: Trigger job runner
         env:
-          APP_URL: ${{ vars.APP_URL || 'https://barberhouseph.vercel.app' }}
+          APP_URL: ${{ vars.APP_URL }}
           INTERNAL_JOB_KEY: ${{ secrets.INTERNAL_JOB_KEY }}
         run: |
+          if [ -z "$APP_URL" ]; then
+            echo "::error::APP_URL repository variable is not set (Settings → Secrets and variables → Actions → Variables)."
+            exit 1
+          fi
           if [ -z "$INTERNAL_JOB_KEY" ]; then
             echo "::error::INTERNAL_JOB_KEY secret is not set — the endpoint will reject this call."
             exit 1

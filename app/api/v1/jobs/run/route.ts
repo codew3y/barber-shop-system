@@ -3,7 +3,8 @@ import { runJobs } from '@/services/jobs';
 import { isJobRequestAuthorized } from '@/lib/job-auth';
 
 // Releases expired holds, sends reminders, marks no-shows.
-// Triggered by Vercel Cron (see vercel.json) or any external scheduler.
+// Triggered by the GitHub Actions scheduler (.github/workflows/jobs.yml),
+// Vercel Cron, or any external scheduler.
 // The authorization rules live in lib/job-auth.ts so they can be tested.
 async function handle(req: NextRequest) {
   const auth = isJobRequestAuthorized({

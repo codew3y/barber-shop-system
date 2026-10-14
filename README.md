@@ -61,4 +61,5 @@ Local dev needs no keys (matches compose credentials). Live money needs
 - Migrations are **not** automated: after merging a migration, run
   `npx prisma migrate deploy` against prod Neon — one missed migration = 500s.
 - Scheduled jobs run via GitHub Actions every 10 min (Vercel Hobby cron is
-  insufficient); needs `INTERNAL_JOB_KEY` secret + env.
+  insufficient); they and the uptime probe need the `APP_URL` repository
+  variable plus the `INTERNAL_JOB_KEY` secret + env.
