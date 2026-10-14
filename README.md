@@ -50,9 +50,6 @@ Local dev needs no keys (matches compose credentials). Live money needs
 
 ## Project docs (`docs/`)
 
-- `PROJECT.md` — build spec with phase checkboxes (Phase 7 near-done)
-- `PROGRESS.md` — session log, single source of truth for "where are we?"
-- `PHASE-1-RESEARCH.md` / `PHASE-2-ARCHITECTURE.md` — M0/M1 evidence
 - `SECURITY.md` — security findings and launch notes
 - `API.md` — endpoint reference (`/api/v1` + `/api/health`)
 - `OPERATIONS.md` — runbook: deploy, migrations, jobs, monitoring, rollback
@@ -63,7 +60,7 @@ Local dev needs no keys (matches compose credentials). Live money needs
 ## Deploy notes
 
 - Push to `main` → GitHub Actions CI (typecheck, lint, unit, build, e2e) → Vercel deploys.
-- Migrations are **not** automated (`PROJECT.md` 7.1): after merging a migration,
-  run `npx prisma migrate deploy` against prod Neon — one missed migration = 500s.
+- Migrations are **not** automated: after merging a migration, run
+  `npx prisma migrate deploy` against prod Neon — one missed migration = 500s.
 - Scheduled jobs run via GitHub Actions every 10 min (Vercel Hobby cron is
   insufficient); needs `INTERNAL_JOB_KEY` secret + env.
