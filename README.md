@@ -12,7 +12,29 @@ Upstash.
 - Auth: JWT access (15m) + rotating refresh (7d, reuse detection), bcrypt-12, RBAC
 - Payments: PayMongo QR Ph (dynamic per-transaction QR)
 - Notifications: SMTP via Nodemailer, in-app toasts
-- Monitoring: Sentry (DSN set, `instrumentation.ts` + `/api/health`), GitHub Actions (CI gates + scheduled jobs)
+- Monitoring: Sentry (DSN set, `frontend/instrumentation.ts` + `/api/health`), GitHub Actions (CI gates + scheduled jobs)
+
+## Repository layout
+
+npm-workspaces monorepo. Run every command from the repo root; the root
+`.env` is shared by both workspaces.
+
+```
+backend/                 @barberhouse/backend — server logic, no UI
+  prisma/                schema, migrations, seed
+  src/lib/               auth, prisma, redis, payments, push, rate limiting…
+  src/services/          booking, notifications, scheduled jobs
+  src/schemas/           zod request validation
+  scripts/               jobs runner, load test, security audit
+frontend/                @barberhouse/frontend — the Next.js app
+  app/                   pages + app/api/* route handlers
+  components/ hooks/ stores/ lib/   UI and browser-side code
+  public/  e2e/          static assets, Playwright tests
+docs/                    API, user guide, privacy, operations
+```
+
+The frontend imports server code as `@barberhouse/backend/<lib|services|schemas>/<module>`;
+the API route handlers stay in `frontend/app/api` because Next.js serves them.
 
 ## Quickstart
 
@@ -41,9 +63,9 @@ Local dev needs no keys (matches compose credentials). Live money needs
 
 | Command | What |
 |---|---|
-| `npm run dev` / `build` / `start` | Next.js lifecycle (`build` = `prisma generate && next build`) |
-| `npm run typecheck` / `lint` | `tsc --noEmit` / ESLint |
-| `npm test` / `npm run test:e2e` | Vitest unit / Playwright e2e |
+| `npm run dev` / `build` / `start` | Next.js lifecycle for `frontend/` (`build` = `prisma generate && next build`) |
+| `npm run typecheck` / `lint` | `tsc --noEmit` in both workspaces / ESLint |
+| `npm test` / `npm run test:e2e` | Vitest unit (`backend/`) / Playwright e2e (`frontend/`) |
 | `npm run db:seed` | Seed demo shop |
 | `npm run jobs` | Run scheduled jobs (holds, reminders, no-shows) |
 | `npx prisma migrate deploy` | Apply pending migrations (prod — see runbook note below) |
@@ -58,6 +80,9 @@ Local dev needs no keys (matches compose credentials). Live money needs
 ## Deploy notes
 
 - Push to `main` → GitHub Actions CI (typecheck, lint, unit, build, e2e) → Vercel deploys.
+- Vercel project **Root Directory** is `frontend` (Settings → Build and Deployment),
+  with "Include files outside the root directory" enabled; Vercel installs the
+  workspaces from the repo root.
 - Migrations are **not** automated: after merging a migration, run
   `npx prisma migrate deploy` against prod Neon — one missed migration = 500s.
 - Scheduled jobs run via GitHub Actions every 10 min (Vercel Hobby cron is
