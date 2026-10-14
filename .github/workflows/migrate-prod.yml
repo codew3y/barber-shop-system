@@ -18,10 +18,16 @@ on:
         required: true
         default: ''
 
+permissions:
+  contents: read
+
 jobs:
   migrate:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Add required reviewers under Settings → Environments → production
+    # so prod migrations need an explicit approval.
+    environment: production
     steps:
       - name: Confirm gate
         if: ${{ inputs.confirm != 'migrate' }}
@@ -34,7 +40,7 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm install --legacy-peer-deps --no-audit --no-fund
+      - run: npm ci --no-audit --no-fund
 
       - name: Show pending status (dry read before applying)
         continue-on-error: true

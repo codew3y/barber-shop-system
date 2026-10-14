@@ -36,8 +36,32 @@ yarn-error.log*
 .env*
 !.env.example
 
-# recovered session exports (local only, never commit)
+# internal notes, runbooks and session exports (local only, never commit)
+docs/internal/
 docs/RECOVERED-*.md
+
+# logs
+*.log
+
+# editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+
+# local agent settings
+.claude/settings.local.json
+
+# playwright extras
+/blob-report/
+/playwright/.cache/
+
+# caches
+.eslintcache
+
+# keys
+*.key
+*.p12
 
 # vercel
 .vercel
