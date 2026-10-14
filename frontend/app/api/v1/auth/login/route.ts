@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   const ok = await verifyPassword(parsed.data.password, user.passwordHash);
   if (!ok) return jsonError('Invalid credentials', 401);
 
-  const tokens = generateTokens(user.id);
+  const tokens = generateTokens(user);
   return NextResponse.json({
     user: publicUser(user),
     accessToken: tokens.accessToken,

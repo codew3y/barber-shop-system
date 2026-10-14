@@ -9,6 +9,8 @@
  *   - `X-Internal-Key: INTERNAL_JOB_KEY`  for external schedulers and curl
  *   - `Authorization: Bearer CRON_SECRET` for Vercel Cron
  */
+import { createHash, timingSafeEqual } from 'crypto';
+
 export type JobAuthResult = { ok: true } | { ok: false; status: 401 | 503 };
 
 export function isJobRequestAuthorized(input: {
@@ -20,8 +22,8 @@ export function isJobRequestAuthorized(input: {
 }): JobAuthResult {
   const { internalKey, cronSecret, headerInternalKey, headerAuthorization, isProduction } = input;
 
-  if (internalKey && headerInternalKey === internalKey) return { ok: true };
-  if (cronSecret && headerAuthorization === `Bearer ${cronSecret}`) return { ok: true };
+  if (internalKey && safeEqual(headerInternalKey, internalKey)) return { ok: true };
+  if (cronSecret && safeEqual(headerAuthorization, `Bearer ${cronSecret}`)) return { ok: true };
 
   // A secret is configured but the caller did not present it.
   if (internalKey || cronSecret) return { ok: false, status: 401 };
@@ -29,4 +31,13 @@ export function isJobRequestAuthorized(input: {
   // Nothing configured: refuse in production, allow locally.
   if (isProduction) return { ok: false, status: 503 };
   return { ok: true };
+}
+
+// Constant-time comparison so response timing can't be used to guess the
+// secret byte by byte. Hashing first equalises lengths for timingSafeEqual.
+function safeEqual(provided: string | null, expected: string): boolean {
+  if (provided === null) return false;
+  const a = createHash('sha256').update(provided).digest();
+  const b = createHash('sha256').update(expected).digest();
+  return timingSafeEqual(a, b);
 }

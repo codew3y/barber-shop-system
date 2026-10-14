@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@barberhouse/backend/lib/prisma';
 import { generateTokens } from '@barberhouse/backend/lib/auth';
 import { hashPassword } from '@barberhouse/backend/lib/password';
-import { publicUser, jsonError } from '@barberhouse/backend/lib/api';
+import { publicUser, jsonError, scopedGuestUser } from '@barberhouse/backend/lib/api';
 import { cleanText } from '@barberhouse/backend/lib/sanitize';
 import { rateLimit } from '@barberhouse/backend/lib/rate-limit';
 import { guestSchema } from '@barberhouse/backend/schemas/auth';
@@ -12,8 +12,9 @@ import { guestSchema } from '@barberhouse/backend/schemas/auth';
 // Guest checkout: creates a customer account with a random password
 // (no login needed to book), flagged `isGuest`. Every guest gets their own
 // row keyed by email/phone — two walk-ins are never merged into one shared
-// account. A repeat guest resumes their own account; an email or phone that
-// belongs to a *registered* user is asked to log in instead.
+// account. A repeat guest books under their existing row with a session
+// scoped to new bookings (see below); an email or phone that belongs to a
+// *registered* user is asked to log in instead.
 // A unique-index clash on email/phone is a user-facing conflict, not a crash.
 // Two guests can race for the same number; answer with something actionable.
 function conflictResponse(e: unknown) {
@@ -59,33 +60,19 @@ export async function POST(req: NextRequest) {
   // Email is the identity anchor; fall back to phone when the email is new.
   const reusable = byEmail ?? byPhone;
   if (reusable) {
-    // The email and the phone can belong to two *different* guest accounts
-    // (someone reusing a number a relative booked with, say). Writing the
-    // contested value onto the resumed row would break the unique index, so
-    // only claim a field when no other row holds it. The booking still goes
-    // through under the account the email identifies.
-    const phoneHeldByOther = !!byPhone && byPhone.id !== reusable.id;
-    const emailHeldByOther = !!byEmail && byEmail.id !== reusable.id;
-    let user;
-    try {
-      user = await prisma.user.update({
-        where: { id: reusable.id },
-        data: {
-          firstName: cleanText(firstName, 100),
-          lastName: lastName ? cleanText(lastName, 100) : '',
-          ...(phoneHeldByOther ? {} : { phone }),
-          ...(providedEmail && !emailHeldByOther ? { email: providedEmail } : {}),
-        },
-      });
-    } catch (e) {
-      const conflict = conflictResponse(e);
-      if (conflict) return conflict;
-      throw e;
-    }
-    const tokens = generateTokens(user.id);
+    // The caller has only shown that they know this email or phone, not that
+    // they own the account. So the stored profile is left untouched (writing
+    // their contact details onto it would redirect the account's reminders),
+    // and the session they get reaches only bookings they make from now on.
+    const tokens = generateTokens(reusable, { guestSince: new Date() });
     return NextResponse.json(
       {
-        user: publicUser(user),
+        user: scopedGuestUser(reusable, {
+          firstName: cleanText(firstName, 100),
+          lastName: lastName ? cleanText(lastName, 100) : '',
+          email: providedEmail ?? null,
+          phone,
+        }),
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
       },
@@ -112,7 +99,7 @@ export async function POST(req: NextRequest) {
     if (conflict) return conflict;
     throw e;
   }
-  const tokens = generateTokens(user.id);
+  const tokens = generateTokens(user);
   return NextResponse.json(
     { user: publicUser(user), accessToken: tokens.accessToken, refreshToken: tokens.refreshToken },
     { status: 201 }

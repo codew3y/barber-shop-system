@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
       role: 'customer',
     },
   });
-  const tokens = generateTokens(user.id);
+  const tokens = generateTokens(user);
   return NextResponse.json(
     { user: publicUser(user), accessToken: tokens.accessToken, refreshToken: tokens.refreshToken },
     { status: 201 }
