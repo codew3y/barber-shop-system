@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { authenticateAccessToken } from '@barberhouse/backend/lib/api';
+import { EVENTS_COOKIE, authenticateAccessToken } from '@barberhouse/backend/lib/api';
 import { prisma } from '@barberhouse/backend/lib/prisma';
 import { subscribeShopEvents, type ShopEvent } from '@barberhouse/backend/lib/events';
 
@@ -8,11 +8,11 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 // Live shop events over Server-Sent Events (Phase 4.3). EventSource
-// cannot set headers, so the access token travels as `?token=` and is
-// validated once at connect time (15-min TTL bounds the exposure).
+// cannot set headers, so the access token arrives as the httpOnly cookie set
+// by POST /api/v1/events/session, and is validated once at connect time.
 // Staff/admin receive shop-scoped events; customers only their own.
 export async function GET(req: NextRequest) {
-  const token = req.nextUrl.searchParams.get('token');
+  const token = req.cookies.get(EVENTS_COOKIE)?.value;
   if (!token) {
     return NextResponse.json({ error: 'No token provided' }, { status: 401 });
   }

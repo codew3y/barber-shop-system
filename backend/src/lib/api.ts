@@ -110,3 +110,61 @@ export async function requireRole(req: NextRequest, ...roles: Role[]): Promise<A
 export function requirePermission(role: Role, permission: string): boolean {
   return hasPermission(role, permission);
 }
+
+// ---------------------------------------------------------------------------
+// Session cookies. The long-lived refresh token never reaches page
+// JavaScript: it lives in an httpOnly cookie that is only sent to the auth
+// endpoints. The 15-minute access token stays in memory in the page. The
+// live-events stream gets its own short-lived cookie because EventSource
+// cannot send headers (and tokens must not travel in URLs).
+// SameSite=Strict keeps every cookie off cross-site requests (no CSRF).
+
+export const REFRESH_COOKIE = 'bh_refresh';
+export const EVENTS_COOKIE = 'bh_events';
+// Not a credential: a readable "this browser has a session" flag, so pages
+// skip the refresh round-trip for anonymous visitors.
+export const SESSION_HINT_COOKIE = 'bh_session';
+const SESSION_MAX_AGE = 7 * 24 * 60 * 60;
+const REFRESH_COOKIE_PATH = '/api/v1/auth';
+const EVENTS_COOKIE_PATH = '/api/v1/events';
+
+function cookieBase(path: string, maxAge: number) {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict' as const,
+    path,
+    maxAge,
+  };
+}
+
+export function setRefreshCookie(res: NextResponse, refreshToken: string) {
+  res.cookies.set(REFRESH_COOKIE, refreshToken, cookieBase(REFRESH_COOKIE_PATH, SESSION_MAX_AGE));
+  res.cookies.set(SESSION_HINT_COOKIE, '1', { ...cookieBase('/', SESSION_MAX_AGE), httpOnly: false });
+  res.headers.set('Cache-Control', 'no-store');
+  return res;
+}
+
+export function clearRefreshCookie(res: NextResponse) {
+  res.cookies.set(REFRESH_COOKIE, '', cookieBase(REFRESH_COOKIE_PATH, 0));
+  res.cookies.set(SESSION_HINT_COOKIE, '', { ...cookieBase('/', 0), httpOnly: false });
+  res.cookies.set(EVENTS_COOKIE, '', cookieBase(EVENTS_COOKIE_PATH, 0));
+  return res;
+}
+
+export function setEventsCookie(res: NextResponse, accessToken: string) {
+  res.cookies.set(EVENTS_COOKIE, accessToken, cookieBase(EVENTS_COOKIE_PATH, 15 * 60));
+  res.headers.set('Cache-Control', 'no-store');
+  return res;
+}
+
+// Response for login/register/guest: the access token in the body, the
+// refresh token only as a cookie.
+export function sessionResponse(
+  user: unknown,
+  tokens: { accessToken: string; refreshToken: string },
+  status = 200
+) {
+  const res = NextResponse.json({ user, accessToken: tokens.accessToken }, { status });
+  return setRefreshCookie(res, tokens.refreshToken);
+}

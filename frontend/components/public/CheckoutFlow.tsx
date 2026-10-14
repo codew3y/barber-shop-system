@@ -235,7 +235,7 @@ export function CheckoutFlow({
     }
     const [firstName, ...rest] = name.split(/\s+/);
     try {
-      const data = await apiJson<{ user: never; accessToken: string; refreshToken: string }>(
+      const data = await apiJson<{ user: never; accessToken: string }>(
         '/api/v1/auth/guest',
         {
           method: 'POST',
@@ -247,7 +247,7 @@ export function CheckoutFlow({
           }),
         }
       );
-      setSession(data.user, data.accessToken, data.refreshToken);
+      setSession(data.user, data.accessToken);
       return true;
     } catch (e) {
       setError((e as Error).message);

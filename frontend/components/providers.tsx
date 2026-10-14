@@ -141,8 +141,9 @@ function Nav() {
                 </span>
               </span>
               <button
-                onClick={() => {
-                  clear();
+                onClick={async () => {
+                  // Revokes the session server-side and clears its cookies.
+                  await clear();
                   window.location.href = '/';
                 }}
                 className="btn-quiet"
