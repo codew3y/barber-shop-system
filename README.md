@@ -50,12 +50,10 @@ Local dev needs no keys (matches compose credentials). Live money needs
 
 ## Project docs (`docs/`)
 
-- `SECURITY.md` — security findings and launch notes
 - `API.md` — endpoint reference (`/api/v1` + `/api/health`)
 - `OPERATIONS.md` — runbook: deploy, migrations, jobs, monitoring, rollback
 - `USER-GUIDE.md` — customer/staff/admin how-tos + payments policy
 - `PRIVACY.md` — data collection, retention, rights
-- `LAUNCH.md` — launch checklist with verification evidence
 
 ## Deploy notes
 
