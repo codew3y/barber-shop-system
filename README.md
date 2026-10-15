@@ -72,12 +72,10 @@ Local dev needs no keys (matches compose credentials). Live money needs
 | `npm test` / `npm run test:e2e`   | Vitest unit (`backend/`) / Playwright e2e (`frontend/`)                       |
 | `npm run db:seed`                 | Seed demo shop                                                                |
 | `npm run jobs`                    | Run scheduled jobs (holds, reminders, no-shows)                               |
-| `npx prisma migrate deploy`       | Apply pending migrations (prod — see runbook note below)                      |
+| `npx prisma migrate deploy`       | Apply pending migrations (prod — see deploy notes below)                      |
 
 ## Project docs (`docs/`)
 
-- `API.md` — endpoint reference (`/api/v1` + `/api/health`)
-- `OPERATIONS.md` — runbook: deploy, migrations, jobs, monitoring, rollback
 - `USER-GUIDE.md` — customer/staff/admin how-tos + payments policy
 - `PRIVACY.md` — data collection, retention, rights
 
