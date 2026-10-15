@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@barberhouse/backend/lib/prisma';
 import { rateLimit } from '@barberhouse/backend/lib/rate-limit';
 import { shopListQuerySchema } from '@barberhouse/backend/schemas/booking';
+import { publicShopSelect } from '@barberhouse/backend/lib/public-shop';
 
 export async function GET(req: NextRequest) {
   const limited = await rateLimit(req, 'shops-list', 100, 60_000);
@@ -24,6 +25,7 @@ export async function GET(req: NextRequest) {
     prisma.shop.count({ where }),
     prisma.shop.findMany({
       where,
+      select: publicShopSelect,
       skip: (page - 1) * limit,
       take: limit,
       orderBy: { name: 'asc' },
