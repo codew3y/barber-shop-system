@@ -17,7 +17,11 @@ Upstash.
 ## Repository layout
 
 npm-workspaces monorepo. Run every command from the repo root; the root
-`.env` is shared by both workspaces.
+`.env` is shared by both workspaces. `build`, `start` and `test:e2e` go
+through `scripts/with-env.mjs`, which loads that `.env` into the real
+environment first — `next build` fans static generation out to worker
+processes that would not otherwise see it. Where the environment is injected
+instead of file-based (CI, Vercel) the wrapper is a no-op.
 
 ```
 backend/                 @barberhouse/backend — server logic, no UI
@@ -61,14 +65,14 @@ Local dev needs no keys (matches compose credentials). Live money needs
 
 ## Scripts
 
-| Command | What |
-|---|---|
+| Command                           | What                                                                          |
+| --------------------------------- | ----------------------------------------------------------------------------- |
 | `npm run dev` / `build` / `start` | Next.js lifecycle for `frontend/` (`build` = `prisma generate && next build`) |
-| `npm run typecheck` / `lint` | `tsc --noEmit` in both workspaces / ESLint |
-| `npm test` / `npm run test:e2e` | Vitest unit (`backend/`) / Playwright e2e (`frontend/`) |
-| `npm run db:seed` | Seed demo shop |
-| `npm run jobs` | Run scheduled jobs (holds, reminders, no-shows) |
-| `npx prisma migrate deploy` | Apply pending migrations (prod — see runbook note below) |
+| `npm run typecheck` / `lint`      | `tsc --noEmit` in both workspaces / ESLint                                    |
+| `npm test` / `npm run test:e2e`   | Vitest unit (`backend/`) / Playwright e2e (`frontend/`)                       |
+| `npm run db:seed`                 | Seed demo shop                                                                |
+| `npm run jobs`                    | Run scheduled jobs (holds, reminders, no-shows)                               |
+| `npx prisma migrate deploy`       | Apply pending migrations (prod — see runbook note below)                      |
 
 ## Project docs (`docs/`)
 
