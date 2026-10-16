@@ -19,6 +19,10 @@ test('guest books end-to-end and tracks in dashboard', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Cuts & services' })).toBeVisible();
   await page.getByRole('link', { name: 'Book your chair' }).first().click();
+  // Wait for the booking page before touching anything: the landing page now
+  // has its own "Classic Cut" button (the expandable menu), so interacting
+  // mid-navigation could hit the wrong one.
+  await page.waitForURL(/\/booking\//);
 
   // Step 1: Barber & Service (no preselect on the plain flow)
   await page.getByRole('button', { name: /Classic Cut/ }).click();
@@ -51,7 +55,9 @@ test('guest books end-to-end and tracks in dashboard', async ({ page }) => {
   await page.getByRole('link', { name: /Continue to my booking/ }).click();
 
   // Confirmation page
-  await expect(page.getByRole('heading', { name: /Chair reserved/ })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole('heading', { name: /Chair reserved/ })).toBeVisible({
+    timeout: 15000,
+  });
   await expect(page.getByRole('heading', { name: 'Word from the house' })).toBeVisible();
 
   // Dashboard status tracking

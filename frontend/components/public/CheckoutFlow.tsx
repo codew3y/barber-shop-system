@@ -196,28 +196,37 @@ export function CheckoutFlow({
 
   useEffect(() => {
     let cancelled = false;
-    async function init() {
-      if (initialStaffId) {
+
+    // Open the session synchronously. start() resets the store, and the
+    // pickers render straight from a warm react-query cache — so when this
+    // ran inside the async init() below, a selection made in that gap was
+    // silently wiped. The visible symptom was picking a service, picking a
+    // barber, and being told to "pick a barber and a service".
+    start(shopId);
+
+    // Deep links (?staff=) resolve the barber afterwards. setStaff rather
+    // than start(shopId, match): start() would reset the store a second
+    // time and reintroduce exactly the same race.
+    if (initialStaffId) {
+      void (async () => {
         try {
           const data = await queryClient.fetchQuery({
             queryKey: ['staff', shopId],
             queryFn: () => apiJson<{ staff: StaffMember[] }>(`/api/v1/shops/${shopId}/staff`),
           });
-          const match = data.staff.find((s) => s.id === initialStaffId) ?? null;
-          if (!cancelled) start(shopId, match);
-          return;
+          const match = data.staff.find((s) => s.id === initialStaffId);
+          if (!cancelled && match) setStaff(match);
         } catch {
-          // fall through to plain start
+          // Deep link just does not preselect; the picker still works.
         }
-      }
-      if (!cancelled) start(shopId);
+      })();
     }
-    void init();
+
     return () => {
       cancelled = true;
       reset();
     };
-  }, [shopId, initialStaffId, start, reset, queryClient]);
+  }, [shopId, initialStaffId, start, setStaff, reset, queryClient]);
 
   async function ensureAccount(): Promise<boolean> {
     // A guest session is not an identity — the next walk-in on this browser
@@ -235,18 +244,15 @@ export function CheckoutFlow({
     }
     const [firstName, ...rest] = name.split(/\s+/);
     try {
-      const data = await apiJson<{ user: never; accessToken: string }>(
-        '/api/v1/auth/guest',
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            firstName,
-            lastName: rest.join(' '),
-            phone: guest.phone,
-            email: guest.email,
-          }),
-        }
-      );
+      const data = await apiJson<{ user: never; accessToken: string }>('/api/v1/auth/guest', {
+        method: 'POST',
+        body: JSON.stringify({
+          firstName,
+          lastName: rest.join(' '),
+          phone: guest.phone,
+          email: guest.email,
+        }),
+      });
       setSession(data.user, data.accessToken);
       return true;
     } catch (e) {
@@ -297,7 +303,11 @@ export function CheckoutFlow({
         const errBody = (await intentRes.json().catch(() => ({}))) as { error?: string };
         throw new Error(errBody.error ?? `Payment failed (${intentRes.status})`);
       }
-      const intent = (await intentRes.json()) as { amount: string; qrImageUrl: string; testUrl?: string };
+      const intent = (await intentRes.json()) as {
+        amount: string;
+        qrImageUrl: string;
+        testUrl?: string;
+      };
       setPayment({
         bookingId,
         amount: Number(intent.amount),
