@@ -40,8 +40,10 @@ async function pm<T>(path: string, init?: RequestInit): Promise<T> {
   const json = (await res.json().catch(() => null)) as PmEnvelope<T> | null;
   if (!res.ok) {
     const detail =
-      json?.errors?.map((e) => e.detail).filter(Boolean).join('; ') ||
-      `PayMongo ${path} failed (${res.status})`;
+      json?.errors
+        ?.map((e) => e.detail)
+        .filter(Boolean)
+        .join('; ') || `PayMongo ${path} failed (${res.status})`;
     throw new Error(detail);
   }
   if (!json?.data) throw new Error(`PayMongo ${path} returned no data`);
@@ -193,6 +195,38 @@ export function verifyWebhookSignature(
     paymentId: payment?.id ?? null,
     intentId: paymentAttrs.payment_intent_id ?? null,
     bookingId: paymentAttrs.metadata?.bookingId ?? null,
+  };
+}
+
+/**
+ * Read a PaymentIntent back from PayMongo.
+ *
+ * The webhook is the normal confirmation path, but it is a single delivery
+ * we do not control — if it is unregistered, misconfigured or simply lost,
+ * PayMongo has the customer's money and we never hear about it. This lets
+ * the server ask directly instead of waiting to be told.
+ */
+export async function fetchIntent(intentId: string): Promise<{
+  status: string;
+  paid: boolean;
+  /** Still awaiting the customer — its QR can be shown again rather than minting a new one. */
+  payable: boolean;
+  paymentId: string | null;
+  qrImageUrl: string | null;
+  testUrl: string | null;
+}> {
+  const intent = await pm<PmIntent>(`/payment_intents/${intentId}`, { method: 'GET' });
+  const status = intent.attributes.status;
+  const code = intent.attributes.next_action?.code;
+  return {
+    status,
+    paid: status === 'succeeded',
+    // processing = the customer has scanned and it is settling; still not a
+    // reason to hand them a second code to pay.
+    payable: (status === 'awaiting_next_action' || status === 'processing') && !!code?.image_url,
+    paymentId: intent.attributes.payments?.[0]?.id ?? null,
+    qrImageUrl: code?.image_url ?? null,
+    testUrl: code?.test_url ?? null,
   };
 }
 

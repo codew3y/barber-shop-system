@@ -78,8 +78,25 @@ export function PayNow({
         const body = (await intentRes.json().catch(() => ({}))) as { error?: string };
         throw new Error(body.error ?? `Payment failed (${intentRes.status})`);
       }
-      const intent = (await intentRes.json()) as { amount: string; qrImageUrl: string; testUrl?: string };
-      setPending({ amount: Number(intent.amount), reference: null, qrImageUrl: intent.qrImageUrl, testUrl: intent.testUrl ?? null });
+      const intent = (await intentRes.json()) as {
+        amount: string;
+        qrImageUrl?: string;
+        testUrl?: string;
+        alreadyPaid?: boolean;
+      };
+      // The booking was paid already and the webhook simply never arrived:
+      // settle up rather than presenting another code to pay.
+      if (intent.alreadyPaid) {
+        toast.success('That booking is already paid — confirming it now.');
+        onConfirmed?.();
+        return;
+      }
+      setPending({
+        amount: Number(intent.amount),
+        reference: null,
+        qrImageUrl: intent.qrImageUrl ?? null,
+        testUrl: intent.testUrl ?? null,
+      });
     } catch (e) {
       toast.error((e as Error).message);
     } finally {

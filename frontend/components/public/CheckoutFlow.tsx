@@ -305,14 +305,23 @@ export function CheckoutFlow({
       }
       const intent = (await intentRes.json()) as {
         amount: string;
-        qrImageUrl: string;
+        qrImageUrl?: string;
         testUrl?: string;
+        alreadyPaid?: boolean;
       };
+      // Paid already (a webhook that never arrived): go straight to the
+      // booking instead of showing a second code to pay.
+      if (intent.alreadyPaid) {
+        reset();
+        toast.success('Payment confirmed — see you soon.');
+        router.push(`/bookings/${bookingId}`);
+        return;
+      }
       setPayment({
         bookingId,
         amount: Number(intent.amount),
         reference: null,
-        qrImageUrl: intent.qrImageUrl,
+        qrImageUrl: intent.qrImageUrl ?? null,
         testUrl: intent.testUrl ?? null,
       });
     } catch (e) {

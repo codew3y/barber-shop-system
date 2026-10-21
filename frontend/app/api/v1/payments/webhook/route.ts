@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@barberhouse/backend/lib/prisma';
 import { verifyWebhookSignature, type PmWebhookEvent } from '@barberhouse/backend/lib/paymongo';
-import { queueBookingNotifications } from '@barberhouse/backend/services/notificationService';
-import { emitShopEvent } from '@barberhouse/backend/lib/events';
+import { settlePaidPayment } from '@barberhouse/backend/services/paymentConfirmation';
 
 async function findPayment(event: PmWebhookEvent) {
   // Primary: match by intent id stored at create-intent time.
@@ -44,24 +43,9 @@ export async function POST(req: NextRequest) {
   // Idempotent: PayMongo may redeliver events.
   if (event.type === 'payment.paid') {
     const payment = await findPayment(event);
-    if (payment && payment.status !== 'completed') {
-      await prisma.payment.update({
-        where: { id: payment.id },
-        data: {
-          status: 'completed',
-          ...(event.paymentId ? { providerChargeId: event.paymentId } : {}),
-        },
-      });
-      const booking = await prisma.booking.findUnique({ where: { id: payment.bookingId } });
-      if (booking && booking.status === 'pending') {
-        await prisma.booking.update({
-          where: { id: booking.id },
-          data: { status: 'confirmed', holdExpiresAt: null },
-        });
-        void queueBookingNotifications(booking.id, 'booking_confirmed');
-        emitShopEvent({ type: 'booking.confirmed', shopId: booking.shopId, bookingId: booking.id, customerId: booking.customerId, staffId: booking.staffId, status: 'confirmed' });
-      }
-    }
+    // Settlement lives in one shared place so this and the reconciliation
+    // path in the booking read can never diverge.
+    if (payment) await settlePaidPayment(payment.id, event.paymentId);
   } else if (event.type === 'payment.failed' || event.type === 'qrph.expired') {
     const payment = await findPayment(event);
     if (payment && (payment.status === 'pending' || payment.status === 'processing')) {
