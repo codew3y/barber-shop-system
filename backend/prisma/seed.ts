@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
@@ -7,11 +8,26 @@ const prisma = new PrismaClient();
 // Clears the previous demo graph first, then recreates it. Safe to re-run
 // on a dev database (fails if real customer bookings reference demo rows).
 async function main() {
-  const passwordHash = await bcrypt.hash('[redacted]', 12);
+  // Never hardcode this. A fixed seed password in a public repo is a
+  // published credential for every environment that was ever seeded with
+  // it — including production, where these accounts carry the admin role.
+  // Set SEED_PASSWORD to choose one; otherwise a random one is generated
+  // and printed once so a local seed is still usable.
+  const seedPassword = process.env.SEED_PASSWORD || randomBytes(12).toString('base64url');
+  const generated = !process.env.SEED_PASSWORD;
+  const passwordHash = await bcrypt.hash(seedPassword, 12);
+  if (generated) {
+    console.log('');
+    console.log(`  Demo accounts seeded with a generated password: ${seedPassword}`);
+    console.log('  Set SEED_PASSWORD to choose your own. It is not stored anywhere else.');
+    console.log('');
+  }
 
   // Clear previous demo graph (FK-safe order)
   const demoUsers = await prisma.user.findMany({
-    where: { email: { in: ['owner@demo.shop', 'barber@demo.shop', 'marco@demo.shop', 'jay@demo.shop'] } },
+    where: {
+      email: { in: ['owner@demo.shop', 'barber@demo.shop', 'marco@demo.shop', 'jay@demo.shop'] },
+    },
     select: { id: true },
   });
   const demoIds = demoUsers.map((u) => u.id);
@@ -62,7 +78,8 @@ async function main() {
       ownerId: owner.id,
       name: 'BarberHouse',
       slug: 'barberhouse',
-      description: 'The neighborhood booking house for classic cuts, sharp fades, and unhurried straight-razor shaves.',
+      description:
+        'The neighborhood booking house for classic cuts, sharp fades, and unhurried straight-razor shaves.',
       addressLine1: '123 Grooming Blvd',
       city: 'Quezon City',
       state: 'Metro Manila',

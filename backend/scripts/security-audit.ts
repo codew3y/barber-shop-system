@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import 'dotenv/config';
 
 // RBAC + IDOR matrix against a running dev server (`npm run dev`).
@@ -33,10 +34,14 @@ async function req(path: string, token?: string, init: RequestInit = {}) {
   return { status: res.status, body: body as Record<string, unknown> };
 }
 
+// Per-run throwaway credential. Nothing reads these accounts afterwards, so
+// there is no reason for a password literal to live in the repository.
+const RUN_PASSWORD = randomBytes(12).toString('base64url');
+
 async function register(email: string): Promise<string> {
   const { status, body } = await req('/api/v1/auth/register', undefined, {
     method: 'POST',
-    body: JSON.stringify({ email, password: '[redacted]', firstName: 'Sec', lastName: 'Audit' }),
+    body: JSON.stringify({ email, password: RUN_PASSWORD, firstName: 'Sec', lastName: 'Audit' }),
   });
   if (status !== 201) throw new Error(`register ${email} -> ${status}`);
   return body.accessToken as string;
@@ -45,7 +50,7 @@ async function register(email: string): Promise<string> {
 async function login(email: string): Promise<string> {
   const { status, body } = await req('/api/v1/auth/login', undefined, {
     method: 'POST',
-    body: JSON.stringify({ email, password: '[redacted]' }),
+    body: JSON.stringify({ email, password: RUN_PASSWORD }),
   });
   if (status !== 200) throw new Error(`login ${email} -> ${status}`);
   return body.accessToken as string;
@@ -73,41 +78,95 @@ async function main() {
   ctx.admin = await login('owner@demo.shop');
 
   const shops = await req('/api/v1/shops?limit=1');
-  ctx.shopId = ((shops.body as { shops: { id: string }[] }).shops[0]).id;
+  ctx.shopId = (shops.body as { shops: { id: string }[] }).shops[0].id;
   const staff = await req(`/api/v1/shops/${ctx.shopId}/staff`);
-  ctx.staffId = ((staff.body as { staff: { id: string }[] }).staff[0]).id;
+  ctx.staffId = (staff.body as { staff: { id: string }[] }).staff[0].id;
   const services = await req(`/api/v1/shops/${ctx.shopId}/services`);
-  ctx.serviceId = ((services.body as { services: { id: string }[] }).services[0]).id;
+  ctx.serviceId = (services.body as { services: { id: string }[] }).services[0].id;
 
   // A books a slot
   const slot = manilaSlot(nextWeekday(), 9);
   const created = await req('/api/v1/bookings', ctx.customerA, {
     method: 'POST',
     headers: { 'Idempotency-Key': `sec-${stamp}` },
-    body: JSON.stringify({ shopId: ctx.shopId, staffId: ctx.staffId, serviceId: ctx.serviceId, startTime: slot }),
+    body: JSON.stringify({
+      shopId: ctx.shopId,
+      staffId: ctx.staffId,
+      serviceId: ctx.serviceId,
+      startTime: slot,
+    }),
   });
   check('customer creates booking', created.status, 201);
   ctx.bookingId = (created.body.booking as { id: string }).id;
 
   // IDOR: B cannot read / cancel A's booking
-  check('IDOR read blocked', (await req(`/api/v1/bookings/${ctx.bookingId}`, ctx.customerB)).status, 403);
+  check(
+    'IDOR read blocked',
+    (await req(`/api/v1/bookings/${ctx.bookingId}`, ctx.customerB)).status,
+    403
+  );
   check(
     'IDOR cancel blocked',
-    (await req(`/api/v1/bookings/${ctx.bookingId}/cancel`, ctx.customerB, { method: 'PUT', body: '{}' })).status,
+    (
+      await req(`/api/v1/bookings/${ctx.bookingId}/cancel`, ctx.customerB, {
+        method: 'PUT',
+        body: '{}',
+      })
+    ).status,
     403
   );
 
   // RBAC: customer cannot touch admin/staff surfaces
-  check('customer blocked from analytics', (await req(`/api/v1/admin/analytics?shopId=${ctx.shopId}&startDate=2026-09-01&endDate=2026-09-30`, ctx.customerA)).status, 403);
-  check('customer blocked from staff schedule', (await req('/api/v1/staff/schedule', ctx.customerA)).status, [401, 403, 404]);
-  check('customer blocked from service create', (await req('/api/v1/admin/services', ctx.customerA, { method: 'POST', body: '{}' })).status, 403);
+  check(
+    'customer blocked from analytics',
+    (
+      await req(
+        `/api/v1/admin/analytics?shopId=${ctx.shopId}&startDate=2026-09-01&endDate=2026-09-30`,
+        ctx.customerA
+      )
+    ).status,
+    403
+  );
+  check(
+    'customer blocked from staff schedule',
+    (await req('/api/v1/staff/schedule', ctx.customerA)).status,
+    [401, 403, 404]
+  );
+  check(
+    'customer blocked from service create',
+    (await req('/api/v1/admin/services', ctx.customerA, { method: 'POST', body: '{}' })).status,
+    403
+  );
 
   // RBAC: staff cannot touch admin surfaces
-  check('staff blocked from analytics', (await req(`/api/v1/admin/analytics?shopId=${ctx.shopId}&startDate=2026-09-01&endDate=2026-09-30`, ctx.barber)).status, 403);
-  check('staff blocked from service delete', (await req(`/api/v1/admin/services/${ctx.serviceId}`, ctx.barber, { method: 'DELETE' })).status, 403);
+  check(
+    'staff blocked from analytics',
+    (
+      await req(
+        `/api/v1/admin/analytics?shopId=${ctx.shopId}&startDate=2026-09-01&endDate=2026-09-30`,
+        ctx.barber
+      )
+    ).status,
+    403
+  );
+  check(
+    'staff blocked from service delete',
+    (await req(`/api/v1/admin/services/${ctx.serviceId}`, ctx.barber, { method: 'DELETE' })).status,
+    403
+  );
 
   // Unauthenticated
-  check('anon blocked from booking create', (await req('/api/v1/bookings', undefined, { method: 'POST', headers: { 'Idempotency-Key': 'x' }, body: '{}' })).status, 401);
+  check(
+    'anon blocked from booking create',
+    (
+      await req('/api/v1/bookings', undefined, {
+        method: 'POST',
+        headers: { 'Idempotency-Key': 'x' },
+        body: '{}',
+      })
+    ).status,
+    401
+  );
   check('anon blocked from mine', (await req('/api/v1/bookings/mine')).status, 401);
 
   // XSS: stored payload must come back sanitized

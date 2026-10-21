@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import 'dotenv/config';
 
 // Concurrent-booking race test: N parallel requests for the SAME slot.
@@ -30,20 +31,31 @@ function nextWeekday(): string {
   return d.toISOString().slice(0, 10);
 }
 
+// Per-run throwaway credential. This script registers its own account and
+// nothing reads it afterwards, so there is no reason for a password literal
+// to live in the repository.
+const RUN_PASSWORD = randomBytes(12).toString('base64url');
+
 async function main() {
   const stamp = Date.now();
   const email = `race-${stamp}@example.com`;
   const reg = await fetch(`${BASE}/api/v1/auth/register`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ email, password: '[redacted]', firstName: 'Race', lastName: 'Test' }),
+    body: JSON.stringify({ email, password: RUN_PASSWORD, firstName: 'Race', lastName: 'Test' }),
   });
   const { accessToken: token } = (await reg.json()) as { accessToken: string };
 
-  const shops = (await (await fetch(`${BASE}/api/v1/shops?limit=1`)).json()) as { shops: { id: string }[] };
+  const shops = (await (await fetch(`${BASE}/api/v1/shops?limit=1`)).json()) as {
+    shops: { id: string }[];
+  };
   const shopId = shops.shops[0].id;
-  const staff = (await (await fetch(`${BASE}/api/v1/shops/${shopId}/staff`)).json()) as { staff: { id: string }[] };
-  const services = (await (await fetch(`${BASE}/api/v1/shops/${shopId}/services`)).json()) as { services: { id: string }[] };
+  const staff = (await (await fetch(`${BASE}/api/v1/shops/${shopId}/staff`)).json()) as {
+    staff: { id: string }[];
+  };
+  const services = (await (await fetch(`${BASE}/api/v1/shops/${shopId}/services`)).json()) as {
+    services: { id: string }[];
+  };
   const payload = {
     shopId,
     staffId: staff.staff[0].id,
@@ -52,12 +64,16 @@ async function main() {
   };
 
   const results = await Promise.all(
-    Array.from({ length: N }, (_, i) => req('/api/v1/bookings', token, `race-${stamp}-${i}`, payload))
+    Array.from({ length: N }, (_, i) =>
+      req('/api/v1/bookings', token, `race-${stamp}-${i}`, payload)
+    )
   );
   const created = results.filter((r) => r.status === 201);
   const conflicted = results.filter((r) => r.status === 409);
   const other = results.filter((r) => r.status !== 201 && r.status !== 409);
-  console.log(`racers: ${N} | created: ${created.length} | conflicts: ${conflicted.length} | other: ${other.length}`);
+  console.log(
+    `racers: ${N} | created: ${created.length} | conflicts: ${conflicted.length} | other: ${other.length}`
+  );
   if (other.length > 0) console.log('unexpected:', other.slice(0, 3));
 
   // Cleanup: cancel the winner + delete the race user via API-visible paths.
