@@ -33,8 +33,13 @@ if (!command) {
   process.exit(1);
 }
 
-// dev=false: these are build/start/seed style commands, not `next dev`.
-loadEnvConfig(repoRoot, false);
+// `next dev` needs this as much as build does — Turbopack renders server
+// components in a context that next.config.ts's loadEnvConfig never reaches,
+// so a dev page querying the database died with "Environment variable not
+// found: DATABASE_URL". dev mode is detected from the command so .env.development
+// precedence matches what Next would apply itself.
+const isDev = args.includes('dev');
+loadEnvConfig(repoRoot, isDev);
 
 // Windows: npm resolves to npm.cmd, and Node refuses to spawn a .cmd without
 // a shell. Passing an args array alongside shell:true triggers DEP0190, so the

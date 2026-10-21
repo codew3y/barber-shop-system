@@ -7,7 +7,7 @@
     "frontend"
   ],
   "scripts": {
-    "dev": "npm run dev -w @barberhouse/frontend",
+    "dev": "node scripts/with-env.mjs npm run dev -w @barberhouse/frontend",
     "build": "node scripts/with-env.mjs npm run build -w @barberhouse/frontend",
     "start": "node scripts/with-env.mjs npm run start -w @barberhouse/frontend",
     "lint": "eslint",
